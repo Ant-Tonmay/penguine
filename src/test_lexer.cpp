@@ -51,7 +51,7 @@ void testIdentifiers() {
 }
 
 void testComplex() {
-    Lexer lexer("return a + 5;");
+    Lexer lexer("return a + 5");
     auto tokens = lexer.tokenize();
     // return(KEYWORD) a(ID) +(PLUS) 5(NUMBER) ;(NOT_HANDLED_YET?)
     // Note: The original lexer code doesn't explicitly handle semicolon ';'.

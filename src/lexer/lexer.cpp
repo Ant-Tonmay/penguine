@@ -65,6 +65,15 @@ void Lexer::identifier() {
     while (isalpha(peek()) || peek() == '_') advance();
 
     std::string value = source.substr(start, current - start);
+    
+    static const std::unordered_map<std::string, TokenType> keywords = {
+        {"if", TokenType::KEYWORD},
+        {"else", TokenType::KEYWORD},
+        {"while", TokenType::KEYWORD},
+        {"return", TokenType::KEYWORD},
+        {"func", TokenType::KEYWORD}
+    };
+
     if (keywords.count(value)) {
         addToken(TokenType::KEYWORD, value);
     } else {

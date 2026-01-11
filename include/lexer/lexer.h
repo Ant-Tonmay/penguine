@@ -61,13 +61,4 @@ private:
     void addToken(TokenType type, const std::string& lexeme);
     void number();
     void identifier();
-
-    // Keyword map
-    std::unordered_map<std::string, TokenType> keywords = {
-        {"if", TokenType::KEYWORD},
-        {"else", TokenType::KEYWORD},
-        {"while", TokenType::KEYWORD},
-        {"return", TokenType::KEYWORD},
-        {"func", TokenType::KEYWORD}
-    };
 };
