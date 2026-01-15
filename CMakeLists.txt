@@ -20,6 +20,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 file(GLOB_RECURSE PENGUIN_SOURCES
     src/*.cpp
 )
+list(FILTER PENGUIN_SOURCES EXCLUDE REGEX "src/test_parser.cpp")
 list(FILTER PENGUIN_SOURCES EXCLUDE REGEX "src/test_lexer.cpp")
 
 # -----------------------------
@@ -34,6 +35,10 @@ enable_testing()
 add_executable(penguin_test src/test_lexer.cpp src/lexer/lexer.cpp)
 target_include_directories(penguin_test PRIVATE ${PROJECT_SOURCE_DIR}/include)
 add_test(NAME LexerTest COMMAND penguin_test)
+
+add_executable(penguin_parser_test src/test_parser.cpp src/parser/parser.cpp src/lexer/lexer.cpp)
+target_include_directories(penguin_parser_test PRIVATE ${PROJECT_SOURCE_DIR}/include)
+add_test(NAME ParserTest COMMAND penguin_parser_test)
 
 
 # -----------------------------
