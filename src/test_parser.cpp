@@ -159,6 +159,73 @@ void testAssignmentStmt() {
     ASSERT_EQ(stmt->assignments[1].name, "b");
 }
 
+void testForStmt() {
+    std::cout << "Testing ForStmt..." << std::endl;
+    // main() { for(i=0; i<10; i=i+1) { print(i); } }
+    
+    std::vector<Token> tokens = {
+        Token(TokenType::LBRACE, "{"),
+        Token(TokenType::IDENTIFIER, "main"),
+        Token(TokenType::LPAREN, "("),
+        Token(TokenType::RPAREN, ")"),
+        Token(TokenType::LBRACE, "{"),
+        
+        Token(TokenType::IDENTIFIER, "for"), // Parsing as identifier currently
+        Token(TokenType::LPAREN, "("),
+        
+        // Init: i = 0
+        Token(TokenType::IDENTIFIER, "i"),
+        Token(TokenType::EQUAL, "="),
+        Token(TokenType::NUMBER, "0"),
+        Token(TokenType::SEMICOLON, ";"),
+        
+        // Condition: i < 10
+        Token(TokenType::IDENTIFIER, "i"),
+        Token(TokenType::LESS, "<"),
+        Token(TokenType::NUMBER, "10"),
+        Token(TokenType::SEMICOLON, ";"),
+        
+        // Increment: i = i + 1
+        Token(TokenType::IDENTIFIER, "i"),
+        Token(TokenType::EQUAL, "="),
+        Token(TokenType::IDENTIFIER, "i"),
+        Token(TokenType::PLUS, "+"),
+        Token(TokenType::NUMBER, "1"),
+        Token(TokenType::RPAREN, ")"),
+        
+        // Body: { print(i); }
+        Token(TokenType::LBRACE, "{"),
+        Token(TokenType::IDENTIFIER, "print"),
+        Token(TokenType::LPAREN, "("),
+        Token(TokenType::IDENTIFIER, "i"),
+        Token(TokenType::RPAREN, ")"),
+        Token(TokenType::SEMICOLON, ";"),
+        Token(TokenType::RBRACE, "}"),
+        
+        Token(TokenType::RBRACE, "}"), // end function block
+        Token(TokenType::RBRACE, "}"), // end program
+        Token(TokenType::EOF_TOKEN, "")
+    };
+
+    Parser parser(tokens);
+    auto program = parser.parse();
+    ASSERT_NOT_NULL(program);
+    auto& func = program->functions[0];
+    auto* forStmt = dynamic_cast<ForStmt*>(func->body->statements[0].get());
+    
+    ASSERT_NOT_NULL(forStmt);
+    ASSERT_NOT_NULL(forStmt->init);
+    ASSERT_NOT_NULL(forStmt->condition);
+    ASSERT_NOT_NULL(forStmt->increment);
+    ASSERT_NOT_NULL(forStmt->body);
+    
+    // Check init: i=0
+    ASSERT_EQ(forStmt->init->assignments[0].name, "i");
+    
+    // Check increment: i=i+1
+    ASSERT_EQ(forStmt->increment->assignments[0].name, "i");
+}
+
 int main() {
     std::cout << "Running Parser Tests..." << std::endl;
     testNumber();
@@ -166,6 +233,7 @@ int main() {
     testPrecedence();
     testGrouping();
     testAssignmentStmt();
+    testForStmt();
     std::cout << "All parser tests passed!" << std::endl;
     return 0;
 }

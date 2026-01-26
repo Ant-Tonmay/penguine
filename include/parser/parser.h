@@ -38,6 +38,8 @@ private:
     
     // Expressions
     std::unique_ptr<Expr> expression(); // alias for parseExpression logic calls
+    std::unique_ptr<Expr> parseRelational();
+    std::unique_ptr<Expr> parseAdditive();
     std::unique_ptr<Expr> term();
     std::unique_ptr<Expr> factor();
 };

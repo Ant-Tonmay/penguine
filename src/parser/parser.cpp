@@ -125,9 +125,25 @@ std::unique_ptr<ForStmt> Parser::parseForStmt() {
 // ----------------
 
 std::unique_ptr<Expr> Parser::parseExpression() {
-    // expression -> term expression'
-    // expression' -> ("+" | "-") term expression' | ε
-    // Equivalent to: left = term(); while match(+,-) { right = term(); left = binary(left, op, right); }
+    return parseRelational();
+}
+
+std::unique_ptr<Expr> Parser::parseRelational() {
+    // relational -> additive ( ( "<" | ">" | "==" ) additive )*
+    
+    auto left = parseAdditive();
+    
+    while (match(TokenType::LESS) || match(TokenType::GREATER) || match(TokenType::EQUAL_EQUAL)) {
+        std::string op = previous().lexeme;
+        auto right = parseAdditive();
+        left = std::make_unique<BinaryExpr>(std::move(left), op, std::move(right));
+    }
+    
+    return left;
+}
+
+std::unique_ptr<Expr> Parser::parseAdditive() {
+    // additive -> term ( ( "+" | "-" ) term )*
     
     auto left = term();
     
