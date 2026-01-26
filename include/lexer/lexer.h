@@ -24,6 +24,12 @@ enum class TokenType {
     // Punctuation
     LPAREN,
     RPAREN,
+    LBRACE,
+    RBRACE,
+    SEMICOLON,
+    COMMA,
+
+    STRING,
 
     KEYWORD,
     EOF_TOKEN
@@ -61,4 +67,5 @@ private:
     void addToken(TokenType type, const std::string& lexeme);
     void number();
     void identifier();
+    void string();
 };

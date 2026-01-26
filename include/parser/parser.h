@@ -1,30 +1,43 @@
 #pragma once
 
-#include <vector>
-#include <memory>
-
 #include "lexer/lexer.h"
 #include "parser/ast.h"
+#include <vector>
+#include <memory>
+#include <string>
 
 class Parser {
 public:
     explicit Parser(const std::vector<Token>& tokens);
-
-    std::unique_ptr<Expr> parse();
+    std::unique_ptr<Program> parse();
+    
+    // Exposed for testing individual components
+    std::unique_ptr<Expr> parseExpression();
 
 private:
     const std::vector<Token>& tokens;
     size_t current;
 
-    // Grammar rules
-    std::unique_ptr<Expr> expression();
+    // Helper functions
+    bool match(TokenType type);
+    bool check(TokenType type) const;
+    Token advance();
+    Token peek() const;
+    Token previous() const;
+    Token consume(TokenType type, const std::string& message);
+    bool isAtEnd() const;
+
+    // Grammar implementations
+    std::unique_ptr<Function> parseFunction();
+    std::unique_ptr<Block> parseBlock();
+    
+    std::unique_ptr<Stmt> parseStatement();
+    std::unique_ptr<PrintStmt> parsePrintStmt();
+    std::unique_ptr<AssignmentStmt> parseAssignmentStmt();
+    std::unique_ptr<ForStmt> parseForStmt();
+    
+    // Expressions
+    std::unique_ptr<Expr> expression(); // alias for parseExpression logic calls
     std::unique_ptr<Expr> term();
     std::unique_ptr<Expr> factor();
-
-    // Helpers
-    bool match(TokenType type);
-    const Token& advance();
-    const Token& peek() const;
-    const Token& previous() const;
-    bool isAtEnd() const;
 };

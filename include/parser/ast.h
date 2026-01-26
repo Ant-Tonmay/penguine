@@ -1,83 +1,100 @@
 #pragma once
 
-#include <memory>
 #include <string>
+#include <vector>
+#include <memory>
+#include <iostream>
 
 // --------------------
-// Base AST node
+// Base AST Node
 // --------------------
-struct Expr {
-    virtual ~Expr() = default;
+struct ASTNode {
+    virtual ~ASTNode() = default;
 };
 
 // --------------------
-// Literal number
+// Expressions
 // --------------------
-struct NumberExpr : Expr {
-    std::string value;   // keep as string for now
+struct Expr : ASTNode {};
 
-    explicit NumberExpr(const std::string& value)
-        : value(value) {}
-};
-
-// --------------------
-// Variable / identifier
-// --------------------
-struct IdentifierExpr : Expr {
-    std::string name;
-
-    explicit IdentifierExpr(const std::string& name)
-        : name(name) {}
-};
-
-// --------------------
-// Binary expression
-// --------------------
 struct BinaryExpr : Expr {
     std::unique_ptr<Expr> left;
     std::string op;
     std::unique_ptr<Expr> right;
 
-    BinaryExpr(std::unique_ptr<Expr> left,
-               const std::string& op,
-               std::unique_ptr<Expr> right)
+    BinaryExpr(std::unique_ptr<Expr> left, std::string op, std::unique_ptr<Expr> right)
         : left(std::move(left)), op(op), right(std::move(right)) {}
 };
-struct Stmt {
-    virtual ~Stmt() = default;
+
+struct NumberExpr : Expr {
+    std::string value;
+    explicit NumberExpr(std::string value) : value(value) {}
 };
-struct ExprStmt : Stmt {
-    std::unique_ptr<Expr> expr;
-    explicit ExprStmt(std::unique_ptr<Expr> expr)
-        : expr(std::move(expr)) {}
+
+struct StringExpr : Expr {
+    std::string value;
+    explicit StringExpr(std::string value) : value(value) {}
 };
-struct BlockStmt : Stmt {
+
+struct VarExpr : Expr {
+    std::string name;
+    explicit VarExpr(std::string name) : name(name) {}
+};
+
+// --------------------
+// Statements
+// --------------------
+struct Stmt : ASTNode {};
+
+struct Block : Stmt {
     std::vector<std::unique_ptr<Stmt>> statements;
 };
-struct IfStmt : Stmt {
-    std::unique_ptr<Expr> condition;
-    std::unique_ptr<BlockStmt> thenBranch;
-    std::unique_ptr<BlockStmt> elseBranch; // optional
 
-    IfStmt(std::unique_ptr<Expr> cond,
-           std::unique_ptr<BlockStmt> thenB,
-           std::unique_ptr<BlockStmt> elseB)
-        : condition(std::move(cond)),
-          thenBranch(std::move(thenB)),
-          elseBranch(std::move(elseB)) {}
+struct PrintStmt : Stmt {
+    std::unique_ptr<Expr> expression;
+    explicit PrintStmt(std::unique_ptr<Expr> expression) 
+        : expression(std::move(expression)) {}
 };
+
+struct Assignment {
+    std::string name;
+    std::unique_ptr<Expr> value;
+    
+    Assignment(std::string name, std::unique_ptr<Expr> value)
+        : name(name), value(std::move(value)) {}
+};
+
+struct AssignmentStmt : Stmt {
+    std::vector<Assignment> assignments;
+    
+    explicit AssignmentStmt(std::vector<Assignment> assignments)
+        : assignments(std::move(assignments)) {}
+};
+
 struct ForStmt : Stmt {
-    std::unique_ptr<Stmt> initializer;
+    std::unique_ptr<AssignmentStmt> init;
     std::unique_ptr<Expr> condition;
-    std::unique_ptr<Expr> increment;
-    std::unique_ptr<BlockStmt> body;
-};
-struct CallExpr : Expr {
-    std::string callee;
-    std::vector<std::unique_ptr<Expr>> arguments;
+    std::unique_ptr<AssignmentStmt> increment; // Parsing as assignment for now per grammar
+    std::unique_ptr<Block> body;
 
-    CallExpr(std::string callee,
-             std::vector<std::unique_ptr<Expr>> args)
-        : callee(std::move(callee)),
-          arguments(std::move(args)) {}
+    ForStmt(std::unique_ptr<AssignmentStmt> init,
+            std::unique_ptr<Expr> condition,
+            std::unique_ptr<AssignmentStmt> increment,
+            std::unique_ptr<Block> body)
+        : init(std::move(init)), 
+          condition(std::move(condition)), 
+          increment(std::move(increment)), 
+          body(std::move(body)) {}
+};
+
+struct Function : ASTNode {
+    std::string name;
+    std::unique_ptr<Block> body;
+
+    Function(std::string name, std::unique_ptr<Block> body)
+        : name(name), body(std::move(body)) {}
+};
+
+struct Program : ASTNode {
+    std::vector<std::unique_ptr<Function>> functions;
 };

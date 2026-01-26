@@ -25,6 +25,11 @@ std::string Token::toString() const {
         case TokenType::GREATER: typeStr = "GREATER"; break;
         case TokenType::LPAREN: typeStr = "LPAREN"; break;
         case TokenType::RPAREN: typeStr = "RPAREN"; break;
+        case TokenType::LBRACE: typeStr = "LBRACE"; break;
+        case TokenType::RBRACE: typeStr = "RBRACE"; break;
+        case TokenType::SEMICOLON: typeStr = "SEMICOLON"; break;
+        case TokenType::COMMA: typeStr = "COMMA"; break;
+        case TokenType::STRING: typeStr = "STRING"; break;
         case TokenType::KEYWORD: typeStr = "KEYWORD"; break;
         case TokenType::EOF_TOKEN: typeStr = "EOF"; break;
         default: typeStr = "UNKNOWN"; break;
@@ -58,6 +63,56 @@ void Lexer::number() {
 
     std::string value = source.substr(start, current - start);
     addToken(TokenType::NUMBER, value);
+}
+
+void Lexer::string() {
+    while (peek() != '"' && !isAtEnd()) {
+        if (peek() == '\n') {
+            // simpler handling for now, maybe error?
+        }
+        advance();
+    }
+
+    if (isAtEnd()) {
+        std::cerr << "Unterminated string." << std::endl;
+        return;
+    }
+
+    advance(); // The closing "
+
+    // Trim quotes
+    // start was the quote
+    // current is one past the closing quote
+    // so we want from start+1, length = (current-1) - (start+1) = current - start - 2
+    
+    // Actually our helper structure is a bit different. Let's just capture content.
+    // The previous token logic was "start = current - 1" inside number/id calls.
+    // But here we are called AFTER consuming the first quote.
+    // So let's rely on extracting from source relative to where we assume we are.
+    // Wait, let's look at how tokenize calls this. tokenize consumes '"' then calls string().
+    // So `current` is past the first quote.
+    
+    // Let's refine the logic to match `number()` pattern or adjust `tokenize`.
+    // `number()` assumes first digit already consumed/peeked?
+    // No, `tokenize` peeks via switch/default.
+    // `number()`: start = current - 1. `tokenize` calls `number()` inside `default`. 
+    // Is `c` consumed in `tokenize`? Yes `char c = advance();`
+    
+    // So for string:
+    size_t start = current - 1; // Includes opening quote
+    while (peek() != '"' && !isAtEnd()) {
+        advance();
+    }
+    
+    if (isAtEnd()) {
+         std::cerr << "Unterminated string." << std::endl;
+         return;
+    }
+    
+    advance(); // Closing quote
+    
+    std::string value = source.substr(start + 1, current - start - 2);
+    addToken(TokenType::STRING, value);
 }
 
 void Lexer::identifier() {
@@ -100,8 +155,13 @@ std::vector<Token> Lexer::tokenize() {
                 break;
             case '<': addToken(TokenType::LESS, "<"); break;
             case '>': addToken(TokenType::GREATER, ">"); break;
-            case '(' : addToken(TokenType::LPAREN, "("); break;
-            case ')' : addToken(TokenType::RPAREN, ")"); break;
+            case '(': addToken(TokenType::LPAREN, "("); break;
+            case ')': addToken(TokenType::RPAREN, ")"); break;
+            case '{': addToken(TokenType::LBRACE, "{"); break;
+            case '}': addToken(TokenType::RBRACE, "}"); break;
+            case ';': addToken(TokenType::SEMICOLON, ";"); break;
+            case ',': addToken(TokenType::COMMA, ","); break;
+            case '"': string(); break;
 
             case ' ':
             case '\t':
