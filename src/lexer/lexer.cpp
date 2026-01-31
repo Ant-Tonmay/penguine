@@ -68,7 +68,7 @@ void Lexer::number() {
 void Lexer::string() {
     while (peek() != '"' && !isAtEnd()) {
         if (peek() == '\n') {
-            // simpler handling for now, maybe error?
+        
         }
         advance();
     }
@@ -78,28 +78,8 @@ void Lexer::string() {
         return;
     }
 
-    advance(); // The closing "
-
-    // Trim quotes
-    // start was the quote
-    // current is one past the closing quote
-    // so we want from start+1, length = (current-1) - (start+1) = current - start - 2
-    
-    // Actually our helper structure is a bit different. Let's just capture content.
-    // The previous token logic was "start = current - 1" inside number/id calls.
-    // But here we are called AFTER consuming the first quote.
-    // So let's rely on extracting from source relative to where we assume we are.
-    // Wait, let's look at how tokenize calls this. tokenize consumes '"' then calls string().
-    // So `current` is past the first quote.
-    
-    // Let's refine the logic to match `number()` pattern or adjust `tokenize`.
-    // `number()` assumes first digit already consumed/peeked?
-    // No, `tokenize` peeks via switch/default.
-    // `number()`: start = current - 1. `tokenize` calls `number()` inside `default`. 
-    // Is `c` consumed in `tokenize`? Yes `char c = advance();`
-    
-    // So for string:
-    size_t start = current - 1; // Includes opening quote
+    advance();
+    size_t start = current - 1;
     while (peek() != '"' && !isAtEnd()) {
         advance();
     }
@@ -109,7 +89,7 @@ void Lexer::string() {
          return;
     }
     
-    advance(); // Closing quote
+    advance(); 
     
     std::string value = source.substr(start + 1, current - start - 2);
     addToken(TokenType::STRING, value);

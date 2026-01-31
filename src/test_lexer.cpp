@@ -53,20 +53,10 @@ void testIdentifiers() {
 void testComplex() {
     Lexer lexer("return a + 5");
     auto tokens = lexer.tokenize();
-    // return(KEYWORD) a(ID) +(PLUS) 5(NUMBER) ;(NOT_HANDLED_YET?)
-    // Note: The original lexer code doesn't explicitly handle semicolon ';'.
-    // It has a default case that prints "Unexpected character" but continues loop?
-    // Actually the default case breaks if not digit or alpha.
-    // Let's modify the test to not use semicolon for now or expect it to be skipped/error if that's the behavior.
-    // Looking at the code: ' ' is ignored. default: print error.
-    // So current lexer prints "Unexpected character: ;"
-    
     ASSERT_TOKEN(tokens[0], TokenType::KEYWORD, "return");
     ASSERT_TOKEN(tokens[1], TokenType::IDENTIFIER, "a");
     ASSERT_TOKEN(tokens[2], TokenType::PLUS, "+");
     ASSERT_TOKEN(tokens[3], TokenType::NUMBER, "5");
-    // EOF will be next
-    
     std::cout << "testComplex passed" << std::endl;
 }
 

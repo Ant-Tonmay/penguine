@@ -18,12 +18,6 @@ std::unique_ptr<Program> Parser::parse() {
 }
 
 std::unique_ptr<Function> Parser::parseFunction() {
-    // function -> "main" "(" ")" block
-    // For now, grammar only specifies "main", but let's assume it can be any identifier or keyword "main"
-    // Grammar: function -> "main" "(" ")" block
-    // Let's be strict to grammar first: "main" is explicitly listed.
-    // But lexer might type it as IDENTIFIER or KEYWORD?
-    // "main" isn't in keywords map in Lexer, so it's IDENTIFIER "main".
     
     Token nameToken = consume(TokenType::IDENTIFIER, "Expect function name (e.g. 'main').");
     
@@ -47,8 +41,7 @@ std::unique_ptr<Block> Parser::parseBlock() {
 }
 
 std::unique_ptr<Stmt> Parser::parseStatement() {
-    // statement -> print_stmt ";" | assignment_stmt ";" | for_stmt | block
-    
+  
     if (check(TokenType::IDENTIFIER) && peek().lexeme == "print") {
         auto stmt = parsePrintStmt();
         consume(TokenType::SEMICOLON, "Expect ';' after print statement.");
@@ -56,11 +49,10 @@ std::unique_ptr<Stmt> Parser::parseStatement() {
     }
     
     if (check(TokenType::IDENTIFIER) && peek().lexeme == "for") {
-        // "for" might be keyword
+       
         return parseForStmt();
     }
     
-    // Check for KEYWORD "for" if not handled above (if Lexer changes)
     if (check(TokenType::KEYWORD) && peek().lexeme == "for") {
         return parseForStmt();
     }
@@ -69,15 +61,13 @@ std::unique_ptr<Stmt> Parser::parseStatement() {
         return parseBlock();
     }
     
-    // Default to assignment
     auto stmt = parseAssignmentStmt();
     consume(TokenType::SEMICOLON, "Expect ';' after assignment statement.");
     return stmt;
 }
 
 std::unique_ptr<PrintStmt> Parser::parsePrintStmt() {
-    // print "(" expression ")"
-    // consumes "print"
+    
     advance(); 
     consume(TokenType::LPAREN, "Expect '(' after 'print'.");
     auto expr = parseExpression();
@@ -86,8 +76,6 @@ std::unique_ptr<PrintStmt> Parser::parsePrintStmt() {
 }
 
 std::unique_ptr<AssignmentStmt> Parser::parseAssignmentStmt() {
-    // assignment_stmt -> assignment ("," assignment)*
-    // assignment -> IDENTIFIER "=" expression
     
     std::vector<Assignment> assignments;
     
@@ -102,8 +90,7 @@ std::unique_ptr<AssignmentStmt> Parser::parseAssignmentStmt() {
 }
 
 std::unique_ptr<ForStmt> Parser::parseForStmt() {
-    // "for" "(" assignment_stmt ";" expression ";" assignment_stmt ")" block
-    advance(); // consume "for"
+    advance(); 
     consume(TokenType::LPAREN, "Expect '(' after 'for'.");
     
     auto init = parseAssignmentStmt();
@@ -120,17 +107,14 @@ std::unique_ptr<ForStmt> Parser::parseForStmt() {
     return std::make_unique<ForStmt>(std::move(init), std::move(condition), std::move(increment), std::move(body));
 }
 
-// ----------------
-// Expressions
-// ----------------
+
 
 std::unique_ptr<Expr> Parser::parseExpression() {
     return parseRelational();
 }
 
 std::unique_ptr<Expr> Parser::parseRelational() {
-    // relational -> additive ( ( "<" | ">" | "==" ) additive )*
-    
+
     auto left = parseAdditive();
     
     while (match(TokenType::LESS) || match(TokenType::GREATER) || match(TokenType::EQUAL_EQUAL)) {
@@ -143,7 +127,6 @@ std::unique_ptr<Expr> Parser::parseRelational() {
 }
 
 std::unique_ptr<Expr> Parser::parseAdditive() {
-    // additive -> term ( ( "+" | "-" ) term )*
     
     auto left = term();
     
@@ -157,8 +140,7 @@ std::unique_ptr<Expr> Parser::parseAdditive() {
 }
 
 std::unique_ptr<Expr> Parser::term() {
-    // term -> factor term'
-    // term' -> ("*" | "/") factor term' | ε
+    
     
     auto left = factor();
     
@@ -172,7 +154,6 @@ std::unique_ptr<Expr> Parser::term() {
 }
 
 std::unique_ptr<Expr> Parser::factor() {
-    // factor -> NUMBER | IDENTIFIER | "(" expression ")"
     
     if (match(TokenType::NUMBER)) {
         return std::make_unique<NumberExpr>(previous().lexeme);
@@ -192,14 +173,10 @@ std::unique_ptr<Expr> Parser::factor() {
         return expr;
     }
     
-    // Parse error
+
     throw std::runtime_error("Expect expression. Found: " + peek().lexeme);
 }
 
-
-// ----------------
-// Helpers
-// ----------------
 
 bool Parser::match(TokenType type) {
     if (check(type)) {

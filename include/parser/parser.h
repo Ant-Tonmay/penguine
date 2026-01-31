@@ -10,15 +10,11 @@ class Parser {
 public:
     explicit Parser(const std::vector<Token>& tokens);
     std::unique_ptr<Program> parse();
-    
-    // Exposed for testing individual components
     std::unique_ptr<Expr> parseExpression();
 
 private:
     const std::vector<Token>& tokens;
     size_t current;
-
-    // Helper functions
     bool match(TokenType type);
     bool check(TokenType type) const;
     Token advance();
@@ -27,7 +23,6 @@ private:
     Token consume(TokenType type, const std::string& message);
     bool isAtEnd() const;
 
-    // Grammar implementations
     std::unique_ptr<Function> parseFunction();
     std::unique_ptr<Block> parseBlock();
     
@@ -35,9 +30,8 @@ private:
     std::unique_ptr<PrintStmt> parsePrintStmt();
     std::unique_ptr<AssignmentStmt> parseAssignmentStmt();
     std::unique_ptr<ForStmt> parseForStmt();
-    
-    // Expressions
-    std::unique_ptr<Expr> expression(); // alias for parseExpression logic calls
+
+    std::unique_ptr<Expr> expression(); 
     std::unique_ptr<Expr> parseRelational();
     std::unique_ptr<Expr> parseAdditive();
     std::unique_ptr<Expr> term();

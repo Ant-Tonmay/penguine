@@ -5,16 +5,10 @@
 #include <memory>
 #include <iostream>
 
-// --------------------
-// Base AST Node
-// --------------------
 struct ASTNode {
     virtual ~ASTNode() = default;
 };
 
-// --------------------
-// Expressions
-// --------------------
 struct Expr : ASTNode {};
 
 struct BinaryExpr : Expr {
@@ -41,9 +35,6 @@ struct VarExpr : Expr {
     explicit VarExpr(std::string name) : name(name) {}
 };
 
-// --------------------
-// Statements
-// --------------------
 struct Stmt : ASTNode {};
 
 struct Block : Stmt {
@@ -74,7 +65,7 @@ struct AssignmentStmt : Stmt {
 struct ForStmt : Stmt {
     std::unique_ptr<AssignmentStmt> init;
     std::unique_ptr<Expr> condition;
-    std::unique_ptr<AssignmentStmt> increment; // Parsing as assignment for now per grammar
+    std::unique_ptr<AssignmentStmt> increment; 
     std::unique_ptr<Block> body;
 
     ForStmt(std::unique_ptr<AssignmentStmt> init,

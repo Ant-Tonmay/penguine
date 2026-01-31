@@ -4,14 +4,9 @@
 #include <vector>
 #include <unordered_map>
 
-// --------------------
-// Token types
-// --------------------
 enum class TokenType {
     IDENTIFIER,
     NUMBER,
-
-    // Operators
     PLUS,
     MINUS,
     STAR,
@@ -20,24 +15,18 @@ enum class TokenType {
     EQUAL_EQUAL,
     LESS,
     GREATER,
-
-    // Punctuation
     LPAREN,
     RPAREN,
     LBRACE,
     RBRACE,
     SEMICOLON,
     COMMA,
-
     STRING,
-
     KEYWORD,
     EOF_TOKEN
 };
 
-// --------------------
-// Token structure
-// --------------------
+
 struct Token {
     TokenType type;
     std::string lexeme;
@@ -46,9 +35,7 @@ struct Token {
     std::string toString() const;
 };
 
-// --------------------
-// Lexer interface
-// --------------------
+
 class Lexer {
 public:
     explicit Lexer(const std::string& source);
@@ -58,8 +45,6 @@ private:
     std::string source;
     std::vector<Token> tokens;
     size_t current;
-
-    // Helper functions
     bool isAtEnd() const;
     char advance();
     char peek() const;
