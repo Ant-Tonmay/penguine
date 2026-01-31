@@ -22,6 +22,7 @@ file(GLOB_RECURSE PENGUIN_SOURCES
 )
 list(FILTER PENGUIN_SOURCES EXCLUDE REGEX "src/test_parser.cpp")
 list(FILTER PENGUIN_SOURCES EXCLUDE REGEX "src/test_lexer.cpp")
+list(FILTER PENGUIN_SOURCES EXCLUDE REGEX "src/test_symbol_table.cpp")
 
 # -----------------------------
 # Executable
@@ -39,6 +40,10 @@ add_test(NAME LexerTest COMMAND penguin_test)
 add_executable(penguin_parser_test src/test_parser.cpp src/parser/parser.cpp src/lexer/lexer.cpp)
 target_include_directories(penguin_parser_test PRIVATE ${PROJECT_SOURCE_DIR}/include)
 add_test(NAME ParserTest COMMAND penguin_parser_test)
+
+add_executable(penguin_symbol_table_test src/test_symbol_table.cpp src/symbol_table/symbol_table.cpp)
+target_include_directories(penguin_symbol_table_test PRIVATE ${PROJECT_SOURCE_DIR}/include)
+add_test(NAME SymbolTableTest COMMAND penguin_symbol_table_test)
 
 
 # -----------------------------
