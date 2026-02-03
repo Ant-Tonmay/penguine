@@ -78,6 +78,19 @@ struct ForStmt : Stmt {
           body(std::move(body)) {}
 };
 
+struct IfStmt : Stmt {
+    std::unique_ptr<Expr> condition;
+    std::unique_ptr<Block> thenBranch;
+    std::unique_ptr<Stmt> elseBranch;
+
+    IfStmt(std::unique_ptr<Expr> condition,
+           std::unique_ptr<Block> thenBranch,
+           std::unique_ptr<Stmt> elseBranch)
+        : condition(std::move(condition)),
+          thenBranch(std::move(thenBranch)),
+          elseBranch(std::move(elseBranch)) {}
+};
+
 struct Function : ASTNode {
     std::string name;
     std::unique_ptr<Block> body;

@@ -60,6 +60,10 @@ std::unique_ptr<Stmt> Parser::parseStatement() {
     if (check(TokenType::LBRACE)) {
         return parseBlock();
     }
+
+    if (check(TokenType::KEYWORD) && peek().lexeme == "if") {
+        return parseIfStmt();
+    }
     
     auto stmt = parseAssignmentStmt();
     consume(TokenType::SEMICOLON, "Expect ';' after assignment statement.");
@@ -105,6 +109,32 @@ std::unique_ptr<ForStmt> Parser::parseForStmt() {
     auto body = parseBlock();
     
     return std::make_unique<ForStmt>(std::move(init), std::move(condition), std::move(increment), std::move(body));
+}
+std::unique_ptr<IfStmt> Parser::parseIfStmt() {
+    advance();
+    consume(TokenType::LPAREN, "Expect '(' after 'if'.");
+    auto condition = parseExpression();
+    consume(TokenType::RPAREN, "Expect ')' after 'if' condition.");
+
+    auto thenBranch = parseBlock();
+
+    std::unique_ptr<Stmt> elseBranch = nullptr;
+
+
+    if (match(TokenType::KEYWORD) && previous().lexeme == "else") {
+
+        if (check(TokenType::KEYWORD) && peek().lexeme == "if") {
+            elseBranch = parseIfStmt(); 
+        } else {
+            elseBranch = parseBlock();
+        }
+    }
+
+    return std::make_unique<IfStmt>(
+        std::move(condition),
+        std::move(thenBranch),
+        std::move(elseBranch)
+    );
 }
 
 

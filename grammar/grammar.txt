@@ -1,0 +1,33 @@
+program        → "{" function_list "}"
+function_list  → function function_list | ε
+function       → "main" "(" ")" block
+
+block          → "{" statement_list "}"
+statement_list → statement statement_list | ε
+
+statement →
+      print_stmt ";"
+    | assignment_stmt ";"
+    | for_stmt
+    | if_stmt
+    | block
+
+print_stmt     → "print" "(" string ")"
+
+if_stmt        → "if" "(" expression ")" block  else_part
+else_part      → 
+            "else" if_stmt 
+            | "else" block
+            | ε
+
+assignment_stmt → assignment ("," assignment)*
+assignment      → IDENTIFIER "=" expression
+
+for_stmt →
+    "for" "(" assignment_stmt ";" expression ";" assignment_stmt ")" block
+
+expression → term expression'
+expression' → ("+" | "-") term expression' | ε
+term → factor term'
+term' → ("*" | "/") factor term' | ε
+factor → NUMBER | IDENTIFIER | "(" expression ")"

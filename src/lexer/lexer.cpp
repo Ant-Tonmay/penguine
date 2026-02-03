@@ -66,9 +66,10 @@ void Lexer::number() {
 }
 
 void Lexer::string() {
+    size_t start = current;
     while (peek() != '"' && !isAtEnd()) {
         if (peek() == '\n') {
-        
+            // Handle newlines if tracked
         }
         advance();
     }
@@ -78,20 +79,8 @@ void Lexer::string() {
         return;
     }
 
-    advance();
-    size_t start = current - 1;
-    while (peek() != '"' && !isAtEnd()) {
-        advance();
-    }
-    
-    if (isAtEnd()) {
-         std::cerr << "Unterminated string." << std::endl;
-         return;
-    }
-    
-    advance(); 
-    
-    std::string value = source.substr(start + 1, current - start - 2);
+    std::string value = source.substr(start, current - start);
+    advance(); // Consume the closing "
     addToken(TokenType::STRING, value);
 }
 
