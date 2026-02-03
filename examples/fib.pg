@@ -1,0 +1,13 @@
+{
+  main() {
+    a = 0;
+    b = 1;
+
+    for (i = 0; i < 10; i = i + 1) {
+      print(a);
+      temp = a + b;
+      a = b;
+      b = temp;
+    }
+  }
+}
