@@ -102,3 +102,10 @@ struct Function : ASTNode {
 struct Program : ASTNode {
     std::vector<std::unique_ptr<Function>> functions;
 };
+struct UnaryExpr : Expr {
+    std::string op;
+    std::unique_ptr<Expr> right;
+
+    UnaryExpr(std::string op, std::unique_ptr<Expr> right)
+        : op(std::move(op)), right(std::move(right)) {}
+};

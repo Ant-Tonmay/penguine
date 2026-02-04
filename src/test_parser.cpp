@@ -226,6 +226,461 @@ void testForStmt() {
     ASSERT_EQ(forStmt->increment->assignments[0].name, "i");
 }
 
+void test_logical_operators(){
+    std::cout << "a && b || c" << std::endl;
+    std::vector<Token> tokens = {
+        Token(TokenType::LBRACE, "{"),
+        Token(TokenType::IDENTIFIER, "main"),
+        Token(TokenType::LPAREN, "("),
+        Token(TokenType::RPAREN, ")"),
+        Token(TokenType::LBRACE, "{"),
+        
+        Token(TokenType::IDENTIFIER, "res"),
+        Token(TokenType::EQUAL, "="),
+        Token(TokenType::IDENTIFIER, "a"),
+        Token(TokenType::AND, "&&"),
+        Token(TokenType::IDENTIFIER, "b"),
+        Token(TokenType::OR, "||"),
+        Token(TokenType::IDENTIFIER, "c"),
+        Token(TokenType::SEMICOLON, ";"),
+        
+        Token(TokenType::RBRACE, "}"), // end function block
+        Token(TokenType::RBRACE, "}"), // end program
+        Token(TokenType::EOF_TOKEN, "")
+    };
+
+    Parser parser(tokens);
+    auto program = parser.parse();
+    ASSERT_NOT_NULL(program);
+    auto& func = program->functions[0];
+    auto* assignStmt = dynamic_cast<AssignmentStmt*>(func->body->statements[0].get());
+    
+    ASSERT_NOT_NULL(assignStmt);
+    ASSERT_EQ(assignStmt->assignments[0].name, "res");
+    
+    // Check expression: a && b || c
+    auto* expr = assignStmt->assignments[0].value.get();
+    auto* binExpr = dynamic_cast<BinaryExpr*>(expr);
+    ASSERT_NOT_NULL(binExpr);
+    ASSERT_EQ(binExpr->op, "||");
+    
+    // Check right side: c
+    auto* rightId = dynamic_cast<VarExpr*>(binExpr->right.get());
+    ASSERT_NOT_NULL(rightId);
+    ASSERT_EQ(rightId->name, "c");
+    
+    // Check left side: a && b
+    auto* leftBin = dynamic_cast<BinaryExpr*>(binExpr->left.get());
+    ASSERT_NOT_NULL(leftBin);
+    ASSERT_EQ(leftBin->op, "&&");
+    
+    // Check left-left: a
+    auto* leftLeftId = dynamic_cast<VarExpr*>(leftBin->left.get());
+    ASSERT_NOT_NULL(leftLeftId);
+    ASSERT_EQ(leftLeftId->name, "a");
+    
+    // Check left-right: b
+    auto* leftRightId = dynamic_cast<VarExpr*>(leftBin->right.get());
+    ASSERT_NOT_NULL(leftRightId);
+    ASSERT_EQ(leftRightId->name, "b");
+}
+
+void test_logical_operator_level2(){
+    std::cout << "a < b && c < d" << std::endl;
+    std::vector<Token> tokens = {
+        Token(TokenType::LBRACE, "{"),
+        Token(TokenType::IDENTIFIER, "main"),
+        Token(TokenType::LPAREN, "("),
+        Token(TokenType::RPAREN, ")"),
+        Token(TokenType::LBRACE, "{"),
+        
+        Token(TokenType::IDENTIFIER, "res"),
+        Token(TokenType::EQUAL, "="),
+        Token(TokenType::IDENTIFIER, "a"),
+        Token(TokenType::LESS, "<"),
+        Token(TokenType::IDENTIFIER, "b"),
+        Token(TokenType::AND, "&&"),
+        Token(TokenType::IDENTIFIER, "c"),
+        Token(TokenType::LESS, "<"),
+        Token(TokenType::IDENTIFIER, "d"),
+        Token(TokenType::SEMICOLON, ";"),
+        
+        Token(TokenType::RBRACE, "}"), // end function block
+        Token(TokenType::RBRACE, "}"), // end program
+        Token(TokenType::EOF_TOKEN, "")
+    };
+
+    Parser parser(tokens);
+    auto program = parser.parse();
+    ASSERT_NOT_NULL(program);
+    auto& func = program->functions[0];
+    auto* assignStmt = dynamic_cast<AssignmentStmt*>(func->body->statements[0].get());
+    
+    ASSERT_NOT_NULL(assignStmt);
+    ASSERT_EQ(assignStmt->assignments[0].name, "res");
+    
+    // Check expression: a < b && c < d
+    auto* expr = assignStmt->assignments[0].value.get();
+    auto* binExpr = dynamic_cast<BinaryExpr*>(expr);
+    ASSERT_NOT_NULL(binExpr);
+    ASSERT_EQ(binExpr->op, "&&");
+    
+    // Check right side: c < d
+    auto* rightBin = dynamic_cast<BinaryExpr*>(binExpr->right.get());
+    ASSERT_NOT_NULL(rightBin);
+    ASSERT_EQ(rightBin->op, "<");
+    
+    // Check left side: a < b
+    auto* leftBin = dynamic_cast<BinaryExpr*>(binExpr->left.get());
+    ASSERT_NOT_NULL(leftBin);
+    ASSERT_EQ(leftBin->op, "<");
+    
+    // Check left-left: a
+    auto* leftLeftId = dynamic_cast<VarExpr*>(leftBin->left.get());
+    ASSERT_NOT_NULL(leftLeftId);
+    ASSERT_EQ(leftLeftId->name, "a");
+    
+    // Check left-right: b
+    auto* leftRightId = dynamic_cast<VarExpr*>(leftBin->right.get());
+    ASSERT_NOT_NULL(leftRightId);
+    ASSERT_EQ(leftRightId->name, "b");
+}
+
+void test_logical_operator_level3(){
+    std::cout << "a <= b && c >= d || e != f" << std::endl;
+    std::vector<Token> tokens = {
+        Token(TokenType::LBRACE, "{"),
+        Token(TokenType::IDENTIFIER, "main"),
+        Token(TokenType::LPAREN, "("),
+        Token(TokenType::RPAREN, ")"),
+        Token(TokenType::LBRACE, "{"),
+        
+        Token(TokenType::IDENTIFIER, "res"),
+        Token(TokenType::EQUAL, "="),
+        Token(TokenType::IDENTIFIER, "a"),
+        Token(TokenType::LESS_EQUAL, "<="),
+        Token(TokenType::IDENTIFIER, "b"),
+        Token(TokenType::AND, "&&"),
+        Token(TokenType::IDENTIFIER, "c"),
+        Token(TokenType::GREATER_EQUAL, ">="),
+        Token(TokenType::IDENTIFIER, "d"),
+        Token(TokenType::OR, "||"),
+        Token(TokenType::IDENTIFIER, "e"),
+        Token(TokenType::NOT_EQUAL, "!="),
+        Token(TokenType::IDENTIFIER, "f"),
+        Token(TokenType::SEMICOLON, ";"),
+        
+        Token(TokenType::RBRACE, "}"), // end function block
+        Token(TokenType::RBRACE, "}"), // end program
+        Token(TokenType::EOF_TOKEN, "")
+    };
+
+    Parser parser(tokens);
+    auto program = parser.parse();
+    ASSERT_NOT_NULL(program);
+    auto& func = program->functions[0];
+    auto* assignStmt = dynamic_cast<AssignmentStmt*>(func->body->statements[0].get());
+    
+    ASSERT_NOT_NULL(assignStmt);
+    ASSERT_EQ(assignStmt->assignments[0].name, "res");
+    
+    // Check expression: a <= b && c >= d || e != f
+    auto* expr = assignStmt->assignments[0].value.get();
+    auto* binExpr = dynamic_cast<BinaryExpr*>(expr);
+    ASSERT_NOT_NULL(binExpr);
+    ASSERT_EQ(binExpr->op, "||");
+    
+    // Check right side: e != f
+    auto* rightBin = dynamic_cast<BinaryExpr*>(binExpr->right.get());
+    ASSERT_NOT_NULL(rightBin);
+    ASSERT_EQ(rightBin->op, "!=");
+    
+    // Check left side: a <= b && c >= d
+    auto* leftBin = dynamic_cast<BinaryExpr*>(binExpr->left.get());
+    ASSERT_NOT_NULL(leftBin);
+    ASSERT_EQ(leftBin->op, "&&");
+    
+    // Check left-left: a <= b
+    auto* leftLeftBin = dynamic_cast<BinaryExpr*>(leftBin->left.get());
+    ASSERT_NOT_NULL(leftLeftBin);
+    ASSERT_EQ(leftLeftBin->op, "<=");
+    
+    // Check left-right: c >= d
+    auto* leftRightBin = dynamic_cast<BinaryExpr*>(leftBin->right.get());
+    ASSERT_NOT_NULL(leftRightBin);
+    ASSERT_EQ(leftRightBin->op, ">=");
+    
+    // Check left-left-left: a
+    auto* leftLeftLeftId = dynamic_cast<VarExpr*>(leftLeftBin->left.get());
+    ASSERT_NOT_NULL(leftLeftLeftId);
+    ASSERT_EQ(leftLeftLeftId->name, "a");
+    
+    // Check left-left-right: b
+    auto* leftLeftRightId = dynamic_cast<VarExpr*>(leftLeftBin->right.get());
+    ASSERT_NOT_NULL(leftLeftRightId);
+    ASSERT_EQ(leftLeftRightId->name, "b");
+    
+    // Check left-right-left: c
+    auto* leftRightLeftId = dynamic_cast<VarExpr*>(leftRightBin->left.get());
+    ASSERT_NOT_NULL(leftRightLeftId);
+    ASSERT_EQ(leftRightLeftId->name, "c");
+    
+    // Check left-right-right: d
+    auto* leftRightRightId = dynamic_cast<VarExpr*>(leftRightBin->right.get());
+    ASSERT_NOT_NULL(leftRightRightId);
+    ASSERT_EQ(leftRightRightId->name, "d");
+    
+    // Check right-left: e
+    auto* rightLeftId = dynamic_cast<VarExpr*>(rightBin->left.get());
+    ASSERT_NOT_NULL(rightLeftId);
+    ASSERT_EQ(rightLeftId->name, "e");
+    
+    // Check right-right: f
+    auto* rightRightId = dynamic_cast<VarExpr*>(rightBin->right.get());
+    ASSERT_NOT_NULL(rightRightId);
+    ASSERT_EQ(rightRightId->name, "f");
+}
+
+void test_logical_operator_level4(){
+    std::cout << "a <= b && c >= d || e != f && g > h" << std::endl;
+    //a <= b && c >= d || e != f && g > h
+    std::vector<Token> tokens = {
+        Token(TokenType::LBRACE, "{"),
+        Token(TokenType::IDENTIFIER, "main"),
+        Token(TokenType::LPAREN, "("),
+        Token(TokenType::RPAREN, ")"),
+        Token(TokenType::LBRACE, "{"),
+        
+        Token(TokenType::IDENTIFIER, "res"),
+        Token(TokenType::EQUAL, "="),
+        Token(TokenType::IDENTIFIER, "a"),
+        Token(TokenType::LESS_EQUAL, "<="),
+        Token(TokenType::IDENTIFIER, "b"),
+        Token(TokenType::AND, "&&"),
+        Token(TokenType::IDENTIFIER, "c"),
+        Token(TokenType::GREATER_EQUAL, ">="),
+        Token(TokenType::IDENTIFIER, "d"),
+        Token(TokenType::OR, "||"),
+        Token(TokenType::IDENTIFIER, "e"),
+        Token(TokenType::NOT_EQUAL, "!="),
+        Token(TokenType::IDENTIFIER, "f"),
+        Token(TokenType::AND, "&&"),
+        Token(TokenType::IDENTIFIER, "g"),
+        Token(TokenType::GREATER, ">"),
+        Token(TokenType::IDENTIFIER, "h"),
+        Token(TokenType::SEMICOLON, ";"),
+        
+        Token(TokenType::RBRACE, "}"), // end function block
+        Token(TokenType::RBRACE, "}"), // end program
+        Token(TokenType::EOF_TOKEN, "")
+    };
+
+    Parser parser(tokens);
+    auto program = parser.parse();
+    ASSERT_NOT_NULL(program);
+    auto& func = program->functions[0];
+    auto* assignStmt = dynamic_cast<AssignmentStmt*>(func->body->statements[0].get());
+    
+    ASSERT_NOT_NULL(assignStmt);
+    ASSERT_EQ(assignStmt->assignments[0].name, "res");
+    
+    // Check expression: a <= b && c >= d || e != f && g > h
+    auto* expr = assignStmt->assignments[0].value.get();
+    auto* binExpr = dynamic_cast<BinaryExpr*>(expr);
+    ASSERT_NOT_NULL(binExpr);
+    ASSERT_EQ(binExpr->op, "||");
+    
+    // Check left side: a <= b && c >= d
+    auto* leftBin = dynamic_cast<BinaryExpr*>(binExpr->left.get());
+    ASSERT_NOT_NULL(leftBin);
+    ASSERT_EQ(leftBin->op, "&&");
+    
+    // Check left-left: a <= b
+    auto* leftLeftBin = dynamic_cast<BinaryExpr*>(leftBin->left.get());
+    ASSERT_NOT_NULL(leftLeftBin);
+    ASSERT_EQ(leftLeftBin->op, "<=");
+    
+    // Check left-right: c >= d
+    auto* leftRightBin = dynamic_cast<BinaryExpr*>(leftBin->right.get());
+    ASSERT_NOT_NULL(leftRightBin);
+    ASSERT_EQ(leftRightBin->op, ">=");
+    
+    // Check left-left-left: a
+    auto* leftLeftLeftId = dynamic_cast<VarExpr*>(leftLeftBin->left.get());
+    ASSERT_NOT_NULL(leftLeftLeftId);
+    ASSERT_EQ(leftLeftLeftId->name, "a");
+    
+    // Check left-left-right: b
+    auto* leftLeftRightId = dynamic_cast<VarExpr*>(leftLeftBin->right.get());
+    ASSERT_NOT_NULL(leftLeftRightId);
+    ASSERT_EQ(leftLeftRightId->name, "b");
+    
+    // Check left-right-left: c
+    auto* leftRightLeftId = dynamic_cast<VarExpr*>(leftRightBin->left.get());
+    ASSERT_NOT_NULL(leftRightLeftId);
+    ASSERT_EQ(leftRightLeftId->name, "c");
+    
+    // Check left-right-right: d
+    auto* leftRightRightId = dynamic_cast<VarExpr*>(leftRightBin->right.get());
+    ASSERT_NOT_NULL(leftRightRightId);
+    ASSERT_EQ(leftRightRightId->name, "d");
+
+    // Check right side: e != f && g > h
+    // rightBin is "&&"
+    auto* rightBin = dynamic_cast<BinaryExpr*>(binExpr->right.get());
+    ASSERT_NOT_NULL(rightBin);
+    ASSERT_EQ(rightBin->op, "&&");
+    
+    // Check left side of rightBin: e != f
+    auto* rightLeftBin = dynamic_cast<BinaryExpr*>(rightBin->left.get());
+    ASSERT_NOT_NULL(rightLeftBin);
+    ASSERT_EQ(rightLeftBin->op, "!=");
+
+    // Check rightLeftBin left: e
+    auto* eId = dynamic_cast<VarExpr*>(rightLeftBin->left.get());
+    ASSERT_NOT_NULL(eId);
+    ASSERT_EQ(eId->name, "e");
+
+    // Check rightLeftBin right: f
+    auto* fId = dynamic_cast<VarExpr*>(rightLeftBin->right.get());
+    ASSERT_NOT_NULL(fId);
+    ASSERT_EQ(fId->name, "f");
+    
+    // Check right side of rightBin: g > h
+    auto* rightRightBin = dynamic_cast<BinaryExpr*>(rightBin->right.get());
+    ASSERT_NOT_NULL(rightRightBin);
+    ASSERT_EQ(rightRightBin->op, ">");
+
+    // Check rightRightBin left: g
+    auto* gId = dynamic_cast<VarExpr*>(rightRightBin->left.get());
+    ASSERT_NOT_NULL(gId);
+    ASSERT_EQ(gId->name, "g");
+
+    // Check rightRightBin right: h
+    auto* hId = dynamic_cast<VarExpr*>(rightRightBin->right.get());
+    ASSERT_NOT_NULL(hId);
+    ASSERT_EQ(hId->name, "h");
+}
+void test_logical_operator_level5(){
+    std::cout << "(a <= b && c >= d || e != f && g > h)" << std::endl;
+    std::vector<Token> tokens = {
+        Token(TokenType::LBRACE, "{"),
+        Token(TokenType::IDENTIFIER, "main"),
+        Token(TokenType::LPAREN, "("),
+        Token(TokenType::RPAREN, ")"),
+        Token(TokenType::LBRACE, "{"),
+        
+        Token(TokenType::IDENTIFIER, "res"),
+        Token(TokenType::EQUAL, "="),
+        Token(TokenType::LPAREN, "("),
+        Token(TokenType::IDENTIFIER, "a"),
+        Token(TokenType::LESS_EQUAL, "<="),
+        Token(TokenType::IDENTIFIER, "b"),
+        Token(TokenType::AND, "&&"),
+        Token(TokenType::IDENTIFIER, "c"),
+        Token(TokenType::GREATER_EQUAL, ">="),
+        Token(TokenType::IDENTIFIER, "d"),
+        Token(TokenType::OR, "||"),
+        Token(TokenType::IDENTIFIER, "e"),
+        Token(TokenType::NOT_EQUAL, "!="),
+        Token(TokenType::IDENTIFIER, "f"),
+        Token(TokenType::AND, "&&"),
+        Token(TokenType::IDENTIFIER, "g"),
+        Token(TokenType::GREATER, ">"),
+        Token(TokenType::IDENTIFIER, "h"),
+        Token(TokenType::RPAREN, ")"),
+        Token(TokenType::SEMICOLON, ";"),
+        
+        Token(TokenType::RBRACE, "}"), // end function block
+        Token(TokenType::RBRACE, "}"), // end program
+        Token(TokenType::EOF_TOKEN, "")
+    };
+
+    Parser parser(tokens);
+    auto program = parser.parse();
+    ASSERT_NOT_NULL(program);
+    auto& func = program->functions[0];
+    auto* assignStmt = dynamic_cast<AssignmentStmt*>(func->body->statements[0].get());
+    
+    ASSERT_NOT_NULL(assignStmt);
+    ASSERT_EQ(assignStmt->assignments[0].name, "res");
+    
+    // Check expression: a <= b && c >= d || e != f && g > h
+    auto* expr = assignStmt->assignments[0].value.get();
+    auto* binExpr = dynamic_cast<BinaryExpr*>(expr);
+    ASSERT_NOT_NULL(binExpr);
+    ASSERT_EQ(binExpr->op, "||");
+    
+    // Check right side: e != f && g > h
+    auto* rightBin = dynamic_cast<BinaryExpr*>(binExpr->right.get());
+    ASSERT_NOT_NULL(rightBin);
+    ASSERT_EQ(rightBin->op, "&&");
+    
+    // Check left side: a <= b && c >= d
+    auto* leftBin = dynamic_cast<BinaryExpr*>(binExpr->left.get());
+    ASSERT_NOT_NULL(leftBin);
+    ASSERT_EQ(leftBin->op, "&&");
+    
+    // Check left-left: a <= b
+    auto* leftLeftBin = dynamic_cast<BinaryExpr*>(leftBin->left.get());
+    ASSERT_NOT_NULL(leftLeftBin);
+    ASSERT_EQ(leftLeftBin->op, "<=");
+    
+    // Check left-right: c >= d
+    auto* leftRightBin = dynamic_cast<BinaryExpr*>(leftBin->right.get());
+    ASSERT_NOT_NULL(leftRightBin);
+    ASSERT_EQ(leftRightBin->op, ">=");
+    
+    // Check left-left-left: a
+    auto* leftLeftLeftId = dynamic_cast<VarExpr*>(leftLeftBin->left.get());
+    ASSERT_NOT_NULL(leftLeftLeftId);
+    ASSERT_EQ(leftLeftLeftId->name, "a");
+    
+    // Check left-left-right: b
+    auto* leftLeftRightId = dynamic_cast<VarExpr*>(leftLeftBin->right.get());
+    ASSERT_NOT_NULL(leftLeftRightId);
+    ASSERT_EQ(leftLeftRightId->name, "b");
+    
+    // Check left-right-left: c
+    auto* leftRightLeftId = dynamic_cast<VarExpr*>(leftRightBin->left.get());
+    ASSERT_NOT_NULL(leftRightLeftId);
+    ASSERT_EQ(leftRightLeftId->name, "c");
+    
+    // Check left-right-right: d
+    auto* leftRightRightId = dynamic_cast<VarExpr*>(leftRightBin->right.get());
+    ASSERT_NOT_NULL(leftRightRightId);
+    ASSERT_EQ(leftRightRightId->name, "d");
+    
+    // Check right side of rightBin: e != f
+    auto* rightLeftBin = dynamic_cast<BinaryExpr*>(rightBin->left.get());
+    ASSERT_NOT_NULL(rightLeftBin);
+    ASSERT_EQ(rightLeftBin->op, "!=");
+
+    // Check rightLeftBin left: e
+    auto* eId = dynamic_cast<VarExpr*>(rightLeftBin->left.get());
+    ASSERT_NOT_NULL(eId);
+    ASSERT_EQ(eId->name, "e");
+
+    // Check rightLeftBin right: f
+    auto* fId = dynamic_cast<VarExpr*>(rightLeftBin->right.get());
+    ASSERT_NOT_NULL(fId);
+    ASSERT_EQ(fId->name, "f");
+    
+    // Check right side of rightBin: g > h
+    auto* rightRightBin = dynamic_cast<BinaryExpr*>(rightBin->right.get());
+    ASSERT_NOT_NULL(rightRightBin);
+    ASSERT_EQ(rightRightBin->op, ">");
+
+    // Check rightRightBin left: g
+    auto* gId = dynamic_cast<VarExpr*>(rightRightBin->left.get());
+    ASSERT_NOT_NULL(gId);
+    ASSERT_EQ(gId->name, "g");
+
+    // Check rightRightBin right: h
+    auto* hId = dynamic_cast<VarExpr*>(rightRightBin->right.get());
+    ASSERT_NOT_NULL(hId);
+    ASSERT_EQ(hId->name, "h");    
+}
 int main() {
     std::cout << "Running Parser Tests..." << std::endl;
     testNumber();
@@ -234,6 +689,11 @@ int main() {
     testGrouping();
     testAssignmentStmt();
     testForStmt();
+    test_logical_operators();
+    test_logical_operator_level2();
+    test_logical_operator_level3();
+    test_logical_operator_level4();
+    test_logical_operator_level5();
     std::cout << "All parser tests passed!" << std::endl;
     return 0;
 }

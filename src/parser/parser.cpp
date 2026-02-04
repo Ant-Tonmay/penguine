@@ -140,72 +140,113 @@ std::unique_ptr<IfStmt> Parser::parseIfStmt() {
 
 
 std::unique_ptr<Expr> Parser::parseExpression() {
-    return parseRelational();
+    return parseLogicalOr();
 }
 
-std::unique_ptr<Expr> Parser::parseRelational() {
+std::unique_ptr<Expr> Parser::parseLogicalOr() {
+    auto left = parseLogicalAnd();
 
+    while (match(TokenType::OR)) { // ||
+        std::string op = previous().lexeme;
+        auto right = parseLogicalAnd();
+        left = std::make_unique<BinaryExpr>(std::move(left), op, std::move(right));
+    }
+
+    return left;
+}
+
+std::unique_ptr<Expr> Parser::parseLogicalAnd() {
+    auto left = parseEquality();
+
+    while (match(TokenType::AND)) { // &&
+        std::string op = previous().lexeme;
+        auto right = parseEquality();
+        left = std::make_unique<BinaryExpr>(std::move(left), op, std::move(right));
+    }
+
+    return left;
+}
+std::unique_ptr<Expr> Parser::parseEquality() {
+    auto left = parseComparison();
+
+    while (match(TokenType::EQUAL_EQUAL) || match(TokenType::NOT_EQUAL)) {
+        std::string op = previous().lexeme;
+        auto right = parseComparison();
+        left = std::make_unique<BinaryExpr>(std::move(left), op, std::move(right));
+    }
+
+    return left;
+}
+std::unique_ptr<Expr> Parser::parseComparison() {
     auto left = parseAdditive();
-    
-    while (match(TokenType::LESS) || match(TokenType::GREATER) || match(TokenType::EQUAL_EQUAL)) {
+
+    while (match(TokenType::LESS) || match(TokenType::LESS_EQUAL) ||
+           match(TokenType::GREATER) || match(TokenType::GREATER_EQUAL)) {
         std::string op = previous().lexeme;
         auto right = parseAdditive();
         left = std::make_unique<BinaryExpr>(std::move(left), op, std::move(right));
     }
-    
+
     return left;
+}
+std::unique_ptr<Expr> Parser::parseUnary() {
+    if (match(TokenType::NOT) || match(TokenType::MINUS)) {
+        std::string op = previous().lexeme;
+        auto right = parseUnary();
+        return std::make_unique<UnaryExpr>(op, std::move(right));
+    }
+    return parsePrimary();
 }
 
 std::unique_ptr<Expr> Parser::parseAdditive() {
     
-    auto left = term();
+    auto left = parseMultiplicative();
     
     while (match(TokenType::PLUS) || match(TokenType::MINUS)) {
         std::string op = previous().lexeme;
-        auto right = term();
+        auto right = parseMultiplicative();
         left = std::make_unique<BinaryExpr>(std::move(left), op, std::move(right));
     }
     
     return left;
 }
 
-std::unique_ptr<Expr> Parser::term() {
-    
-    
-    auto left = factor();
-    
+std::unique_ptr<Expr> Parser::parseMultiplicative() {
+    auto left = parseUnary();
+
     while (match(TokenType::STAR) || match(TokenType::SLASH)) {
         std::string op = previous().lexeme;
-        auto right = factor();
+        auto right = parseUnary();
         left = std::make_unique<BinaryExpr>(std::move(left), op, std::move(right));
     }
-    
+
     return left;
 }
 
-std::unique_ptr<Expr> Parser::factor() {
-    
+
+
+std::unique_ptr<Expr> Parser::parsePrimary() {
     if (match(TokenType::NUMBER)) {
         return std::make_unique<NumberExpr>(previous().lexeme);
     }
-    
+
     if (match(TokenType::STRING)) {
         return std::make_unique<StringExpr>(previous().lexeme);
     }
-    
+
     if (match(TokenType::IDENTIFIER)) {
         return std::make_unique<VarExpr>(previous().lexeme);
     }
-    
+
     if (match(TokenType::LPAREN)) {
         auto expr = parseExpression();
         consume(TokenType::RPAREN, "Expect ')' after expression.");
         return expr;
     }
-    
 
-    throw std::runtime_error("Expect expression. Found: " + peek().lexeme);
+    throw std::runtime_error("Expect expression.");
 }
+
 
 
 bool Parser::match(TokenType type) {
