@@ -60,12 +60,118 @@ void testComplex() {
     std::cout << "testComplex passed" << std::endl;
 }
 
+void test_and(){
+    Lexer lexer(" a && b");
+    auto tokens = lexer.tokenize();
+    ASSERT_TOKEN(tokens[0], TokenType::IDENTIFIER, "a");
+    ASSERT_TOKEN(tokens[1], TokenType::AND, "&&");  
+    ASSERT_TOKEN(tokens[2], TokenType::IDENTIFIER, "b");
+    ASSERT_TOKEN(tokens[3], TokenType::EOF_TOKEN, "");
+    std::cout << "test_and passed" << std::endl;
+}
+
+void test_or(){
+    Lexer lexer(" a || b");
+    auto tokens = lexer.tokenize();
+    ASSERT_TOKEN(tokens[0], TokenType::IDENTIFIER, "a");
+    ASSERT_TOKEN(tokens[1], TokenType::OR, "||");
+    ASSERT_TOKEN(tokens[2], TokenType::IDENTIFIER, "b");
+    ASSERT_TOKEN(tokens[3], TokenType::EOF_TOKEN, "");
+    std::cout << "test_or passed" << std::endl;
+}
+
+void test_not_equal(){
+    Lexer lexer(" a != b");
+    auto tokens = lexer.tokenize();
+    ASSERT_TOKEN(tokens[0], TokenType::IDENTIFIER, "a");
+    ASSERT_TOKEN(tokens[1], TokenType::NOT_EQUAL, "!=");
+    ASSERT_TOKEN(tokens[2], TokenType::IDENTIFIER, "b");
+    ASSERT_TOKEN(tokens[3], TokenType::EOF_TOKEN, "");
+    std::cout << "test_not_equal passed" << std::endl;
+}
+
+void test_less_equal(){
+    Lexer lexer(" a <= b");
+    auto tokens = lexer.tokenize();
+    ASSERT_TOKEN(tokens[0], TokenType::IDENTIFIER, "a");
+    ASSERT_TOKEN(tokens[1], TokenType::LESS_EQUAL, "<=");
+    ASSERT_TOKEN(tokens[2], TokenType::IDENTIFIER, "b");
+    ASSERT_TOKEN(tokens[3], TokenType::EOF_TOKEN, "");
+    std::cout << "test_less_equal passed" << std::endl;
+}
+
+void test_greater_equal(){
+    Lexer lexer(" a >= b");
+    auto tokens = lexer.tokenize();
+    ASSERT_TOKEN(tokens[0], TokenType::IDENTIFIER, "a");
+    ASSERT_TOKEN(tokens[1], TokenType::GREATER_EQUAL, ">=");
+    ASSERT_TOKEN(tokens[2], TokenType::IDENTIFIER, "b");
+    ASSERT_TOKEN(tokens[3], TokenType::EOF_TOKEN, "");
+    std::cout << "test_greater_equal passed" << std::endl;
+}
+
+void test_bitwise_and(){
+    Lexer lexer(" x = a & b");
+    auto tokens = lexer.tokenize();
+    ASSERT_TOKEN(tokens[0], TokenType::IDENTIFIER, "x");
+    ASSERT_TOKEN(tokens[1], TokenType::EQUAL, "=");
+    ASSERT_TOKEN(tokens[2], TokenType::IDENTIFIER, "a");
+    ASSERT_TOKEN(tokens[3], TokenType::BITWISE_AND, "&");
+    ASSERT_TOKEN(tokens[4], TokenType::IDENTIFIER, "b");
+    ASSERT_TOKEN(tokens[5], TokenType::EOF_TOKEN, "");
+    std::cout << "test_bitwise_and passed" << std::endl;
+}
+
+void test_bitwise_or(){
+    Lexer lexer(" x = a | b");
+    auto tokens = lexer.tokenize();
+    ASSERT_TOKEN(tokens[0], TokenType::IDENTIFIER, "x");
+    ASSERT_TOKEN(tokens[1], TokenType::EQUAL, "=");
+    ASSERT_TOKEN(tokens[2], TokenType::IDENTIFIER, "a");
+    ASSERT_TOKEN(tokens[3], TokenType::BITWISE_OR, "|");
+    ASSERT_TOKEN(tokens[4], TokenType::IDENTIFIER, "b");
+    ASSERT_TOKEN(tokens[5], TokenType::EOF_TOKEN, "");
+    std::cout << "test_bitwise_or passed" << std::endl;
+}
+
+void test_bitwise_xor(){
+    Lexer lexer(" x = a ^ b");
+    auto tokens = lexer.tokenize();
+    ASSERT_TOKEN(tokens[0], TokenType::IDENTIFIER, "x");
+    ASSERT_TOKEN(tokens[1], TokenType::EQUAL, "=");
+    ASSERT_TOKEN(tokens[2], TokenType::IDENTIFIER, "a");
+    ASSERT_TOKEN(tokens[3], TokenType::BITWISE_XOR, "^");
+    ASSERT_TOKEN(tokens[4], TokenType::IDENTIFIER, "b");
+    ASSERT_TOKEN(tokens[5], TokenType::EOF_TOKEN, "");
+    std::cout << "test_bitwise_xor passed" << std::endl;
+}
+
+void test_not(){
+    Lexer lexer("a = !b");
+    auto tokens = lexer.tokenize();
+    ASSERT_TOKEN(tokens[0], TokenType::IDENTIFIER, "a");
+    ASSERT_TOKEN(tokens[1], TokenType::EQUAL, "=");
+    ASSERT_TOKEN(tokens[2], TokenType::NOT, "!");
+    ASSERT_TOKEN(tokens[3], TokenType::IDENTIFIER, "b");
+    ASSERT_TOKEN(tokens[4], TokenType::EOF_TOKEN, "");
+    std::cout << "test_not passed" << std::endl;
+}
+
 int main() {
     std::cout << "Running Lexer Tests..." << std::endl;
     testBasics();
     testKeywords();
     testIdentifiers();
     testComplex();
+    test_and();
+    test_or();
+    test_not();
+    test_not_equal();
+    test_less_equal();
+    test_greater_equal();
+    test_bitwise_and();
+    test_bitwise_or();
+    test_bitwise_xor();
     std::cout << "All tests passed!" << std::endl;
     return 0;
 }

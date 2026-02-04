@@ -114,6 +114,33 @@ std::vector<Token> Lexer::tokenize() {
             case '-': addToken(TokenType::MINUS, "-"); break;
             case '*': addToken(TokenType::STAR, "*"); break;
             case '/': addToken(TokenType::SLASH, "/"); break;
+            case '&' :
+                if(peek() == '&'){
+                    advance();
+                    addToken(TokenType::AND, "&&");
+                }else{
+                    addToken(TokenType::BITWISE_AND, "&");
+                }
+                break;
+            case '|' :
+                if(peek() == '|'){
+                    advance();
+                    addToken(TokenType::OR, "||");
+                }else{
+                    addToken(TokenType::BITWISE_OR, "|");
+                }
+                break;
+            case '^' :
+                addToken(TokenType::BITWISE_XOR, "^");
+                break;
+            case '!' :
+                if(peek() == '='){
+                    advance();
+                    addToken(TokenType::NOT_EQUAL, "!=");
+                }else{
+                    addToken(TokenType::NOT, "!");
+                }
+                break;
             case '=':
                 if (peek() == '=') {
                     advance();
@@ -122,8 +149,22 @@ std::vector<Token> Lexer::tokenize() {
                     addToken(TokenType::EQUAL, "=");
                 }
                 break;
-            case '<': addToken(TokenType::LESS, "<"); break;
-            case '>': addToken(TokenType::GREATER, ">"); break;
+            case '<': 
+                if(peek() =='='){
+                    advance();
+                    addToken(TokenType::LESS_EQUAL, "<=");
+                }else{
+                    addToken(TokenType::LESS, "<");
+                }
+                break;
+            case '>': 
+                if(peek() == '='){
+                    advance();  
+                    addToken(TokenType::GREATER_EQUAL, ">=");
+                }else{
+                    addToken(TokenType::GREATER, ">");
+                }
+                break;
             case '(': addToken(TokenType::LPAREN, "("); break;
             case ')': addToken(TokenType::RPAREN, ")"); break;
             case '{': addToken(TokenType::LBRACE, "{"); break;
