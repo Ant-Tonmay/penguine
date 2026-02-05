@@ -153,6 +153,9 @@ std::vector<Token> Lexer::tokenize() {
                 if(peek() =='='){
                     advance();
                     addToken(TokenType::LESS_EQUAL, "<=");
+                }else if (peek() == '<'){
+                    advance();
+                    addToken(TokenType::LEFT_SHIFT, "<<");
                 }else{
                     addToken(TokenType::LESS, "<");
                 }
@@ -161,6 +164,9 @@ std::vector<Token> Lexer::tokenize() {
                 if(peek() == '='){
                     advance();  
                     addToken(TokenType::GREATER_EQUAL, ">=");
+                }else if(peek() == '>'){
+                    advance();
+                    addToken(TokenType::RIGHT_SHIFT, ">>");
                 }else{
                     addToken(TokenType::GREATER, ">");
                 }

@@ -157,6 +157,30 @@ void test_not(){
     std::cout << "test_not passed" << std::endl;
 }
 
+void test_left_shift(){
+    Lexer lexer("x = a << b");
+    auto tokens = lexer.tokenize();
+    ASSERT_TOKEN(tokens[0], TokenType::IDENTIFIER, "x");
+    ASSERT_TOKEN(tokens[1], TokenType::EQUAL, "=");
+    ASSERT_TOKEN(tokens[2], TokenType::IDENTIFIER, "a");
+    ASSERT_TOKEN(tokens[3], TokenType::LEFT_SHIFT, "<<");
+    ASSERT_TOKEN(tokens[4], TokenType::IDENTIFIER, "b");
+    ASSERT_TOKEN(tokens[5], TokenType::EOF_TOKEN, "");
+    std::cout << "test_left_shift passed" << std::endl;
+}
+
+void test_right_shift(){
+    Lexer lexer("x = a >> b");
+    auto tokens = lexer.tokenize();
+    ASSERT_TOKEN(tokens[0], TokenType::IDENTIFIER, "x");
+    ASSERT_TOKEN(tokens[1], TokenType::EQUAL, "=");
+    ASSERT_TOKEN(tokens[2], TokenType::IDENTIFIER, "a");
+    ASSERT_TOKEN(tokens[3], TokenType::RIGHT_SHIFT, ">>");
+    ASSERT_TOKEN(tokens[4], TokenType::IDENTIFIER, "b");
+    ASSERT_TOKEN(tokens[5], TokenType::EOF_TOKEN, "");
+    std::cout << "test_right_shift passed" << std::endl;
+}
+
 int main() {
     std::cout << "Running Lexer Tests..." << std::endl;
     testBasics();
@@ -171,7 +195,9 @@ int main() {
     test_greater_equal();
     test_bitwise_and();
     test_bitwise_or();
-    test_bitwise_xor();
+    test_bitwise_xor(); 
+    test_left_shift();
+    test_right_shift();
     std::cout << "All tests passed!" << std::endl;
     return 0;
 }

@@ -24,6 +24,8 @@ enum class TokenType {
     OR,
     AND,
     NOT,
+    LEFT_SHIFT,
+    RIGHT_SHIFT,
     LPAREN,
     RPAREN,
     LBRACE,
