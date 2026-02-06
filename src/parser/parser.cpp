@@ -87,7 +87,8 @@ std::unique_ptr<AssignmentStmt> Parser::parseAssignmentStmt() {
         Token nameToken = consume(TokenType::IDENTIFIER, "Expect variable name.");
         consume(TokenType::EQUAL, "Expect '=' after variable name.");
         auto value = parseExpression();
-        assignments.emplace_back(nameToken.lexeme, std::move(value));
+        auto target = std::make_unique<VarExpr>(nameToken.lexeme);
+        assignments.emplace_back(std::move(target), std::move(value));
     } while (match(TokenType::COMMA));
     
     return std::make_unique<AssignmentStmt>(std::move(assignments));
@@ -236,7 +237,7 @@ std::unique_ptr<Expr> Parser::parseUnary() {
         auto right = parseUnary();
         return std::make_unique<UnaryExpr>(op, std::move(right));
     }
-    return parsePrimary();
+    return parsePostfix();
 }
 
 std::unique_ptr<Expr> Parser::parseAdditive() {
@@ -264,9 +265,53 @@ std::unique_ptr<Expr> Parser::parseMultiplicative() {
     return left;
 }
 
+std::unique_ptr<Expr> Parser::parsePostfix() {
+    auto expr = parsePrimary();
+
+    while (true) {
+        if (match(TokenType::LBRACKET)) {
+            auto index = parseExpression();
+            consume(TokenType::RBRACKET, "Expect ']'.");
+            expr = std::make_unique<IndexExpr>(std::move(expr), std::move(index));
+        }
+        else if (match(TokenType::LPAREN)) {
+            std::vector<std::unique_ptr<Expr>> arguments;
+            if (!check(TokenType::RPAREN)) {
+                do {
+                    arguments.push_back(parseExpression());
+                } while (match(TokenType::COMMA));
+            }
+            consume(TokenType::RPAREN, "Expect ')' after arguments.");
+            expr = std::make_unique<CallExpr>(std::move(expr), std::move(arguments));
+        }
+        else if (match(TokenType::DOT)) {
+            Token name = consume(TokenType::IDENTIFIER, "Expect property name after '.'.");
+            expr = std::make_unique<MemberExpr>(std::move(expr), name.lexeme);
+        }
+        else {
+            break;
+        }
+    }
+
+    return expr;
+}
 
 
 std::unique_ptr<Expr> Parser::parsePrimary() {
+    if (match(TokenType::LBRACKET)) {
+        std::vector<std::unique_ptr<Expr>> elements;
+
+        if (!check(TokenType::RBRACKET)) {
+            do {
+                elements.push_back(parseExpression());
+            } while (match(TokenType::COMMA));
+        }
+
+        consume(TokenType::RBRACKET, "Expect ']' after array literal.");
+        return std::make_unique<ArrayExpr>(std::move(elements));
+    }
+
+
     if (match(TokenType::NUMBER)) {
         return std::make_unique<NumberExpr>(previous().lexeme);
     }

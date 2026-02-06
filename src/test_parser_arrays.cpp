@@ -162,6 +162,106 @@ void testNestedCalls() {
     ASSERT_NOT_NULL(innerCall);
     ASSERT_EQ(innerCall->arguments.size(), 1);
 }
+void test4DArray() {
+    std::cout << "Testing 4D Array..." << std::endl;
+
+    // arr4d = [
+    //   [
+    //     [ [1], [2] ],
+    //     [ [3], [4] ]
+    //   ],
+    //   [
+    //     [ [5], [6] ],
+    //     [ [7], [8] ]
+    //   ]
+    // ];
+
+    std::vector<Token> tokens = {
+        Token(TokenType::IDENTIFIER, "arr4d"),
+        Token(TokenType::EQUAL, "="),
+
+        Token(TokenType::LBRACKET, "["),
+
+            Token(TokenType::LBRACKET, "["),
+                Token(TokenType::LBRACKET, "["),
+                    Token(TokenType::LBRACKET, "["),
+                        Token(TokenType::NUMBER, "1"),
+                    Token(TokenType::RBRACKET, "]"),
+                    Token(TokenType::COMMA, ","),
+                    Token(TokenType::LBRACKET, "["),
+                        Token(TokenType::NUMBER, "2"),
+                    Token(TokenType::RBRACKET, "]"),
+                Token(TokenType::RBRACKET, "]"),
+                Token(TokenType::COMMA, ","),
+                Token(TokenType::LBRACKET, "["),
+                    Token(TokenType::LBRACKET, "["),
+                        Token(TokenType::NUMBER, "3"),
+                    Token(TokenType::RBRACKET, "]"),
+                    Token(TokenType::COMMA, ","),
+                    Token(TokenType::LBRACKET, "["),
+                        Token(TokenType::NUMBER, "4"),
+                    Token(TokenType::RBRACKET, "]"),
+                Token(TokenType::RBRACKET, "]"),
+            Token(TokenType::RBRACKET, "]"),
+
+            Token(TokenType::COMMA, ","),
+
+            Token(TokenType::LBRACKET, "["),
+                Token(TokenType::LBRACKET, "["),
+                    Token(TokenType::LBRACKET, "["),
+                        Token(TokenType::NUMBER, "5"),
+                    Token(TokenType::RBRACKET, "]"),
+                    Token(TokenType::COMMA, ","),
+                    Token(TokenType::LBRACKET, "["),
+                        Token(TokenType::NUMBER, "6"),
+                    Token(TokenType::RBRACKET, "]"),
+                Token(TokenType::RBRACKET, "]"),
+                Token(TokenType::COMMA, ","),
+                Token(TokenType::LBRACKET, "["),
+                    Token(TokenType::LBRACKET, "["),
+                        Token(TokenType::NUMBER, "7"),
+                    Token(TokenType::RBRACKET, "]"),
+                    Token(TokenType::COMMA, ","),
+                    Token(TokenType::LBRACKET, "["),
+                        Token(TokenType::NUMBER, "8"),
+                    Token(TokenType::RBRACKET, "]"),
+                Token(TokenType::RBRACKET, "]"),
+            Token(TokenType::RBRACKET, "]"),
+
+        Token(TokenType::RBRACKET, "]"),
+        Token(TokenType::SEMICOLON, ";")
+    };
+
+    auto program = parseTokens(tokens);
+    ASSERT_NOT_NULL(program);
+
+    auto& func = program->functions[0];
+    auto* assignStmt =
+        dynamic_cast<AssignmentStmt*>(func->body->statements[0].get());
+    ASSERT_NOT_NULL(assignStmt);
+
+    auto* arr4d =
+        dynamic_cast<ArrayExpr*>(assignStmt->assignments[0].value.get());
+    ASSERT_NOT_NULL(arr4d);
+
+    // Dimension checks
+    ASSERT_EQ(arr4d->elements.size(), 2);                 // D1
+    auto* d2 = dynamic_cast<ArrayExpr*>(arr4d->elements[0].get());
+    ASSERT_NOT_NULL(d2);
+    ASSERT_EQ(d2->elements.size(), 2);                     // D2
+
+    auto* d3 = dynamic_cast<ArrayExpr*>(d2->elements[0].get());
+    ASSERT_NOT_NULL(d3);
+    ASSERT_EQ(d3->elements.size(), 2);                     // D3
+
+    auto* d4 = dynamic_cast<ArrayExpr*>(d3->elements[0].get());
+    ASSERT_NOT_NULL(d4);
+    ASSERT_EQ(d4->elements.size(), 1);                     // D4
+
+    auto* value = dynamic_cast<NumberExpr*>(d4->elements[0].get());
+    ASSERT_NOT_NULL(value);
+}
+
 
 int main() {
     std::cout << "Running Parser Array Tests..." << std::endl;
@@ -169,6 +269,7 @@ int main() {
     testArrayWithCall();
     testMethodCall();
     testNestedCalls();
+    test4DArray();
     std::cout << "All array parser tests passed!" << std::endl;
     return 0;
 }
