@@ -681,6 +681,225 @@ void test_logical_operator_level5(){
     ASSERT_NOT_NULL(hId);
     ASSERT_EQ(hId->name, "h");    
 }
+
+void test_left_shift(){
+    std::cout << "(a << b)" << std::endl;
+    std::vector<Token> tokens = {
+        Token(TokenType::LBRACE, "{"),
+        Token(TokenType::IDENTIFIER, "main"),
+        Token(TokenType::LPAREN, "("),
+        Token(TokenType::RPAREN, ")"),
+        Token(TokenType::LBRACE, "{"),
+        
+        Token(TokenType::IDENTIFIER, "res"),
+        Token(TokenType::EQUAL, "="),
+        Token(TokenType::IDENTIFIER, "a"),
+        Token(TokenType::LEFT_SHIFT, "<<"),
+        Token(TokenType::IDENTIFIER, "b"),
+        Token(TokenType::SEMICOLON, ";"),
+        
+        Token(TokenType::RBRACE, "}"), // end function block
+        Token(TokenType::RBRACE, "}"), // end program
+        Token(TokenType::EOF_TOKEN, "")
+    };
+
+    Parser parser(tokens);
+    auto program = parser.parse();
+    ASSERT_NOT_NULL(program);
+    auto& func = program->functions[0];
+    auto* assignStmt = dynamic_cast<AssignmentStmt*>(func->body->statements[0].get());
+    
+    ASSERT_NOT_NULL(assignStmt);
+    ASSERT_EQ(assignStmt->assignments[0].name, "res");
+    
+    // Check expression: a << b
+    auto* expr = assignStmt->assignments[0].value.get();
+    auto* binExpr = dynamic_cast<BinaryExpr*>(expr);
+    ASSERT_NOT_NULL(binExpr);
+    ASSERT_EQ(binExpr->op, "<<");
+    
+    // Check left side: a
+    auto* leftId = dynamic_cast<VarExpr*>(binExpr->left.get());
+    ASSERT_NOT_NULL(leftId);
+    ASSERT_EQ(leftId->name, "a");
+    
+    // Check right side: b
+    auto* rightId = dynamic_cast<VarExpr*>(binExpr->right.get());
+    ASSERT_NOT_NULL(rightId);
+    ASSERT_EQ(rightId->name, "b");
+}
+
+void test_right_shift(){
+    std::cout << "(a >> b)" << std::endl;
+    std::vector<Token> tokens = {
+        Token(TokenType::LBRACE, "{"),
+        Token(TokenType::IDENTIFIER, "main"),
+        Token(TokenType::LPAREN, "("),
+        Token(TokenType::RPAREN, ")"),
+        Token(TokenType::LBRACE, "{"),
+        
+        Token(TokenType::IDENTIFIER, "res"),
+        Token(TokenType::EQUAL, "="),
+        Token(TokenType::IDENTIFIER, "a"),
+        Token(TokenType::RIGHT_SHIFT, ">>"),
+        Token(TokenType::IDENTIFIER, "b"),
+        Token(TokenType::SEMICOLON, ";"),
+        
+        Token(TokenType::RBRACE, "}"), // end function block
+        Token(TokenType::RBRACE, "}"), // end program
+        Token(TokenType::EOF_TOKEN, "")
+    };
+
+    Parser parser(tokens);
+    auto program = parser.parse();
+    ASSERT_NOT_NULL(program);
+    auto& func = program->functions[0];
+    auto* assignStmt = dynamic_cast<AssignmentStmt*>(func->body->statements[0].get());
+    
+    ASSERT_NOT_NULL(assignStmt);
+    ASSERT_EQ(assignStmt->assignments[0].name, "res");
+    
+    // Check expression: a >> b
+    auto* expr = assignStmt->assignments[0].value.get();
+    auto* binExpr = dynamic_cast<BinaryExpr*>(expr);
+    ASSERT_NOT_NULL(binExpr);
+    ASSERT_EQ(binExpr->op, ">>");
+    
+    // Check left side: a
+    auto* leftId = dynamic_cast<VarExpr*>(binExpr->left.get());
+    ASSERT_NOT_NULL(leftId);
+    ASSERT_EQ(leftId->name, "a");
+    
+    // Check right side: b
+    auto* rightId = dynamic_cast<VarExpr*>(binExpr->right.get());
+    ASSERT_NOT_NULL(rightId);
+    ASSERT_EQ(rightId->name, "b");
+}
+
+void test_shift_operators(){
+    std::cout << "(a << b >> c)" << std::endl;
+    std::vector<Token> tokens = {
+        Token(TokenType::LBRACE, "{"),
+        Token(TokenType::IDENTIFIER, "main"),
+        Token(TokenType::LPAREN, "("),
+        Token(TokenType::RPAREN, ")"),
+        Token(TokenType::LBRACE, "{"),
+        
+        Token(TokenType::IDENTIFIER, "res"),
+        Token(TokenType::EQUAL, "="),
+        Token(TokenType::IDENTIFIER, "a"),
+        Token(TokenType::LEFT_SHIFT, "<<"),
+        Token(TokenType::IDENTIFIER, "b"),
+        Token(TokenType::RIGHT_SHIFT, ">>"),
+        Token(TokenType::IDENTIFIER, "c"),
+        Token(TokenType::SEMICOLON, ";"),
+        
+        Token(TokenType::RBRACE, "}"), // end function block
+        Token(TokenType::RBRACE, "}"), // end program
+        Token(TokenType::EOF_TOKEN, "")
+    };
+
+    Parser parser(tokens);
+    auto program = parser.parse();
+    ASSERT_NOT_NULL(program);
+    auto& func = program->functions[0];
+    auto* assignStmt = dynamic_cast<AssignmentStmt*>(func->body->statements[0].get());
+    
+    ASSERT_NOT_NULL(assignStmt);
+    ASSERT_EQ(assignStmt->assignments[0].name, "res");
+    
+    // Check expression: a << b >> c
+    auto* expr = assignStmt->assignments[0].value.get();
+    auto* binExpr = dynamic_cast<BinaryExpr*>(expr);
+    ASSERT_NOT_NULL(binExpr);
+    ASSERT_EQ(binExpr->op, ">>"  );
+    
+    // Check left side: a << b
+    auto* leftBin = dynamic_cast<BinaryExpr*>(binExpr->left.get());
+    ASSERT_NOT_NULL(leftBin);
+    ASSERT_EQ(leftBin->op, "<<");
+    
+    // Check left-left: a
+    auto* leftLeftId = dynamic_cast<VarExpr*>(leftBin->left.get());
+    ASSERT_NOT_NULL(leftLeftId);
+    ASSERT_EQ(leftLeftId->name, "a");
+    
+    // Check left-right: b
+    auto* leftRightId = dynamic_cast<VarExpr*>(leftBin->right.get());
+    ASSERT_NOT_NULL(leftRightId);
+    ASSERT_EQ(leftRightId->name, "b");
+    
+    // Check right side: c
+    auto* rightId = dynamic_cast<VarExpr*>(binExpr->right.get());
+    ASSERT_NOT_NULL(rightId);
+    ASSERT_EQ(rightId->name, "c");
+}
+
+void test_shift_with_parentheses(){
+    std::cout << "(a << (b >> c))" << std::endl;
+
+    std::vector<Token> tokens = {
+        Token(TokenType::LBRACE, "{"),
+        Token(TokenType::IDENTIFIER, "main"),
+        Token(TokenType::LPAREN, "("),
+        Token(TokenType::RPAREN, ")"),
+        Token(TokenType::LBRACE, "{"),
+        
+        Token(TokenType::IDENTIFIER, "res"),
+        Token(TokenType::EQUAL, "="),
+        Token(TokenType::IDENTIFIER, "a"),
+        Token(TokenType::LEFT_SHIFT, "<<"),
+        Token(TokenType::LPAREN, "("),
+        Token(TokenType::IDENTIFIER, "b"),
+        Token(TokenType::RIGHT_SHIFT, ">>"),
+        Token(TokenType::IDENTIFIER, "c"),
+        Token(TokenType::RPAREN, ")"),
+        Token(TokenType::SEMICOLON, ";"),
+        
+        Token(TokenType::RBRACE, "}"),
+        Token(TokenType::RBRACE, "}"),
+        Token(TokenType::EOF_TOKEN, "")
+    };
+
+    Parser parser(tokens);
+    auto program = parser.parse();
+    ASSERT_NOT_NULL(program);
+
+    auto& func = program->functions[0];
+    auto* assignStmt =
+        dynamic_cast<AssignmentStmt*>(func->body->statements[0].get());
+    ASSERT_NOT_NULL(assignStmt);
+
+    ASSERT_EQ(assignStmt->assignments[0].name, "res");
+
+    // res = a << (b >> c)
+    auto* expr = assignStmt->assignments[0].value.get();
+    auto* topBin = dynamic_cast<BinaryExpr*>(expr);
+    ASSERT_NOT_NULL(topBin);
+
+    // 🔴 THIS IS THE KEY ASSERT
+    ASSERT_EQ(topBin->op, "<<");
+
+    // Left: a
+    auto* leftId = dynamic_cast<VarExpr*>(topBin->left.get());
+    ASSERT_NOT_NULL(leftId);
+    ASSERT_EQ(leftId->name, "a");
+
+    // Right: (b >> c)
+    auto* rightBin = dynamic_cast<BinaryExpr*>(topBin->right.get());
+    ASSERT_NOT_NULL(rightBin);
+    ASSERT_EQ(rightBin->op, ">>");
+
+    auto* rightLeft = dynamic_cast<VarExpr*>(rightBin->left.get());
+    auto* rightRight = dynamic_cast<VarExpr*>(rightBin->right.get());
+    ASSERT_NOT_NULL(rightLeft);
+    ASSERT_NOT_NULL(rightRight);
+    ASSERT_EQ(rightLeft->name, "b");
+    ASSERT_EQ(rightRight->name, "c");
+}
+
+
+
 int main() {
     std::cout << "Running Parser Tests..." << std::endl;
     testNumber();
@@ -694,6 +913,10 @@ int main() {
     test_logical_operator_level3();
     test_logical_operator_level4();
     test_logical_operator_level5();
+    test_shift_operators();
+    test_left_shift();
+    test_right_shift();
+    test_shift_with_parentheses();
     std::cout << "All parser tests passed!" << std::endl;
     return 0;
 }

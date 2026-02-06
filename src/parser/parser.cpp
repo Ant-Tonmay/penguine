@@ -178,10 +178,21 @@ std::unique_ptr<Expr> Parser::parseEquality() {
     return left;
 }
 std::unique_ptr<Expr> Parser::parseComparison() {
-    auto left = parseAdditive();
+    auto left = parseShift();
 
     while (match(TokenType::LESS) || match(TokenType::LESS_EQUAL) ||
            match(TokenType::GREATER) || match(TokenType::GREATER_EQUAL)) {
+        std::string op = previous().lexeme;
+        auto right = parseShift();
+        left = std::make_unique<BinaryExpr>(std::move(left), op, std::move(right));
+    }
+
+    return left;
+}
+std::unique_ptr<Expr> Parser::parseShift() {
+    auto left = parseAdditive();
+
+    while (match(TokenType::LEFT_SHIFT) || match(TokenType::RIGHT_SHIFT)) {
         std::string op = previous().lexeme;
         auto right = parseAdditive();
         left = std::make_unique<BinaryExpr>(std::move(left), op, std::move(right));
