@@ -28,11 +28,14 @@ enum class TokenType {
     RIGHT_SHIFT,
     LPAREN,
     RPAREN,
+    LBRACKET,
+    RBRACKET,
     LBRACE,
     RBRACE,
     SEMICOLON,
     COMMA,
     STRING,
+    DOT,
     KEYWORD,
     EOF_TOKEN
 };

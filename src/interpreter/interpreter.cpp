@@ -64,10 +64,15 @@ void Interpreter::execute(const Stmt* stmt) {
         for (const auto& assignment : declStmt->assignments) {
             Value value = evaluate(assignment.value.get());
              
+            auto var = dynamic_cast<const VarExpr*>(assignment.target.get());
+            if (!var) {
+                throw std::runtime_error("Assignment target must be a variable");
+            }
+
             try {
-                 current->assign(assignment.name, value);
+                 current->assign(var->name, value);
             } catch (const std::runtime_error&) {
-                 current->define(assignment.name, value);
+                 current->define(var->name, value);
             }
         }
     } else if (auto forStmt = dynamic_cast<const ForStmt*>(stmt)) {

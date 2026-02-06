@@ -65,6 +65,11 @@ add_executable(penguin_interpreter_test src/test_interpreter.cpp)
 target_link_libraries(penguin_interpreter_test PRIVATE penguin_core)
 add_test(NAME InterpreterTest COMMAND penguin_interpreter_test)
 
+
+add_executable(penguin_parser_array_test src/test_parser_arrays.cpp)
+target_link_libraries(penguin_parser_array_test PRIVATE penguin_core)
+add_test(NAME ParserArrayTest COMMAND penguin_parser_array_test)
+
 # -----------------------------
 # Debug flags
 # -----------------------------

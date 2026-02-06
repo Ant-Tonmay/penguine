@@ -25,6 +25,8 @@ std::string Token::toString() const {
         case TokenType::GREATER: typeStr = "GREATER"; break;
         case TokenType::LPAREN: typeStr = "LPAREN"; break;
         case TokenType::RPAREN: typeStr = "RPAREN"; break;
+        case TokenType::LBRACKET: typeStr = "LBRACKET"; break;
+        case TokenType::RBRACKET: typeStr = "RBRACKET"; break;
         case TokenType::LBRACE: typeStr = "LBRACE"; break;
         case TokenType::RBRACE: typeStr = "RBRACE"; break;
         case TokenType::SEMICOLON: typeStr = "SEMICOLON"; break;
@@ -173,10 +175,13 @@ std::vector<Token> Lexer::tokenize() {
                 break;
             case '(': addToken(TokenType::LPAREN, "("); break;
             case ')': addToken(TokenType::RPAREN, ")"); break;
+            case '[': addToken(TokenType::LBRACKET, "["); break;
+            case ']': addToken(TokenType::RBRACKET, "]"); break;
             case '{': addToken(TokenType::LBRACE, "{"); break;
             case '}': addToken(TokenType::RBRACE, "}"); break;
             case ';': addToken(TokenType::SEMICOLON, ";"); break;
             case ',': addToken(TokenType::COMMA, ","); break;
+            case '.': addToken(TokenType::DOT, "."); break;
             case '"': string(); break;
 
             case ' ':

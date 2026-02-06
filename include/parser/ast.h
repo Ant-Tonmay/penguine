@@ -48,12 +48,14 @@ struct PrintStmt : Stmt {
 };
 
 struct Assignment {
-    std::string name;
+    std::unique_ptr<Expr> target; 
     std::unique_ptr<Expr> value;
-    
-    Assignment(std::string name, std::unique_ptr<Expr> value)
-        : name(name), value(std::move(value)) {}
+
+    Assignment(std::unique_ptr<Expr> target,
+               std::unique_ptr<Expr> value)
+        : target(std::move(target)), value(std::move(value)) {}
 };
+
 
 struct AssignmentStmt : Stmt {
     std::vector<Assignment> assignments;
@@ -108,4 +110,36 @@ struct UnaryExpr : Expr {
 
     UnaryExpr(std::string op, std::unique_ptr<Expr> right)
         : op(std::move(op)), right(std::move(right)) {}
+};
+
+struct ArrayExpr : Expr {
+    std::vector<std::unique_ptr<Expr>> elements;
+
+    explicit ArrayExpr(std::vector<std::unique_ptr<Expr>> elements)
+        : elements(std::move(elements)) {}
+};
+
+struct IndexExpr : Expr {
+    std::unique_ptr<Expr> array;
+    std::unique_ptr<Expr> index;
+
+    IndexExpr(std::unique_ptr<Expr> array,
+              std::unique_ptr<Expr> index)
+        : array(std::move(array)), index(std::move(index)) {}
+};
+
+struct CallExpr : Expr {
+    std::unique_ptr<Expr> callee;
+    std::vector<std::unique_ptr<Expr>> arguments;
+
+    CallExpr(std::unique_ptr<Expr> callee, std::vector<std::unique_ptr<Expr>> arguments)
+        : callee(std::move(callee)), arguments(std::move(arguments)) {}
+};
+
+struct MemberExpr : Expr {
+    std::unique_ptr<Expr> object;
+    std::string name;
+
+    MemberExpr(std::unique_ptr<Expr> object, std::string name)
+        : object(std::move(object)), name(name) {}
 };

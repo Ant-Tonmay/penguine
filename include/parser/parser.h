@@ -46,4 +46,5 @@ private:
     std::unique_ptr<Expr> parseBitwiseOr();
     std::unique_ptr<Expr> parseBitwiseAnd();
     std::unique_ptr<Expr> parseBitwiseXor();
+    std::unique_ptr<Expr> parsePostfix();
 };

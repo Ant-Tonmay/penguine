@@ -5,6 +5,8 @@
 #include <stdexcept>
 #include <iostream>
 
+
+struct ArrayObject; 
 using Value = std::variant<
     int,      
     bool,
@@ -13,6 +15,13 @@ using Value = std::variant<
     double,
     long,
     long long,
+    ArrayObject*,
     std::monostate,
     std::string 
 >;
+struct ArrayObject {
+    bool isFixed;
+    size_t length;
+    size_t capacity;
+    Value* data;
+};

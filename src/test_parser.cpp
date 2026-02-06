@@ -7,6 +7,12 @@
 // Helper macros for verification
 #define ASSERT_NOT_NULL(ptr) if (ptr == nullptr) { std::cerr << "Assertion failed: " #ptr " is null at line " << __LINE__ << std::endl; exit(1); }
 #define ASSERT_EQ(val1, val2) if (val1 != val2) { std::cerr << "Assertion failed: " #val1 " (" << val1 << ") != " #val2 " (" << val2 << ") at line " << __LINE__ << std::endl; exit(1); }
+#define ASSERT_ASSIGN_NAME(assignment, expected) \
+    { \
+        auto* v = dynamic_cast<VarExpr*>((assignment).target.get()); \
+        ASSERT_NOT_NULL(v); \
+        ASSERT_EQ(v->name, expected); \
+    }
 
 void testNumber() {
     std::cout << "Testing Number..." << std::endl;
@@ -155,8 +161,8 @@ void testAssignmentStmt() {
     auto* stmt = dynamic_cast<AssignmentStmt*>(func->body->statements[0].get());
     ASSERT_NOT_NULL(stmt);
     ASSERT_EQ(stmt->assignments.size(), 2);
-    ASSERT_EQ(stmt->assignments[0].name, "a");
-    ASSERT_EQ(stmt->assignments[1].name, "b");
+    ASSERT_ASSIGN_NAME(stmt->assignments[0], "a");
+    ASSERT_ASSIGN_NAME(stmt->assignments[1], "b");
 }
 
 void testForStmt() {
@@ -220,10 +226,10 @@ void testForStmt() {
     ASSERT_NOT_NULL(forStmt->body);
     
     // Check init: i=0
-    ASSERT_EQ(forStmt->init->assignments[0].name, "i");
+    ASSERT_ASSIGN_NAME(forStmt->init->assignments[0], "i");
     
     // Check increment: i=i+1
-    ASSERT_EQ(forStmt->increment->assignments[0].name, "i");
+    ASSERT_ASSIGN_NAME(forStmt->increment->assignments[0], "i");
 }
 
 void test_logical_operators(){
@@ -256,7 +262,7 @@ void test_logical_operators(){
     auto* assignStmt = dynamic_cast<AssignmentStmt*>(func->body->statements[0].get());
     
     ASSERT_NOT_NULL(assignStmt);
-    ASSERT_EQ(assignStmt->assignments[0].name, "res");
+    ASSERT_ASSIGN_NAME(assignStmt->assignments[0], "res");
     
     // Check expression: a && b || c
     auto* expr = assignStmt->assignments[0].value.get();
@@ -317,7 +323,7 @@ void test_logical_operator_level2(){
     auto* assignStmt = dynamic_cast<AssignmentStmt*>(func->body->statements[0].get());
     
     ASSERT_NOT_NULL(assignStmt);
-    ASSERT_EQ(assignStmt->assignments[0].name, "res");
+    ASSERT_ASSIGN_NAME(assignStmt->assignments[0], "res");
     
     // Check expression: a < b && c < d
     auto* expr = assignStmt->assignments[0].value.get();
@@ -382,7 +388,7 @@ void test_logical_operator_level3(){
     auto* assignStmt = dynamic_cast<AssignmentStmt*>(func->body->statements[0].get());
     
     ASSERT_NOT_NULL(assignStmt);
-    ASSERT_EQ(assignStmt->assignments[0].name, "res");
+    ASSERT_ASSIGN_NAME(assignStmt->assignments[0], "res");
     
     // Check expression: a <= b && c >= d || e != f
     auto* expr = assignStmt->assignments[0].value.get();
@@ -482,7 +488,7 @@ void test_logical_operator_level4(){
     auto* assignStmt = dynamic_cast<AssignmentStmt*>(func->body->statements[0].get());
     
     ASSERT_NOT_NULL(assignStmt);
-    ASSERT_EQ(assignStmt->assignments[0].name, "res");
+    ASSERT_ASSIGN_NAME(assignStmt->assignments[0], "res");
     
     // Check expression: a <= b && c >= d || e != f && g > h
     auto* expr = assignStmt->assignments[0].value.get();
@@ -603,7 +609,7 @@ void test_logical_operator_level5(){
     auto* assignStmt = dynamic_cast<AssignmentStmt*>(func->body->statements[0].get());
     
     ASSERT_NOT_NULL(assignStmt);
-    ASSERT_EQ(assignStmt->assignments[0].name, "res");
+    ASSERT_ASSIGN_NAME(assignStmt->assignments[0], "res");
     
     // Check expression: a <= b && c >= d || e != f && g > h
     auto* expr = assignStmt->assignments[0].value.get();
@@ -710,7 +716,7 @@ void test_left_shift(){
     auto* assignStmt = dynamic_cast<AssignmentStmt*>(func->body->statements[0].get());
     
     ASSERT_NOT_NULL(assignStmt);
-    ASSERT_EQ(assignStmt->assignments[0].name, "res");
+    ASSERT_ASSIGN_NAME(assignStmt->assignments[0], "res");
     
     // Check expression: a << b
     auto* expr = assignStmt->assignments[0].value.get();
@@ -757,7 +763,7 @@ void test_right_shift(){
     auto* assignStmt = dynamic_cast<AssignmentStmt*>(func->body->statements[0].get());
     
     ASSERT_NOT_NULL(assignStmt);
-    ASSERT_EQ(assignStmt->assignments[0].name, "res");
+    ASSERT_ASSIGN_NAME(assignStmt->assignments[0], "res");
     
     // Check expression: a >> b
     auto* expr = assignStmt->assignments[0].value.get();
@@ -806,7 +812,7 @@ void test_shift_operators(){
     auto* assignStmt = dynamic_cast<AssignmentStmt*>(func->body->statements[0].get());
     
     ASSERT_NOT_NULL(assignStmt);
-    ASSERT_EQ(assignStmt->assignments[0].name, "res");
+    ASSERT_ASSIGN_NAME(assignStmt->assignments[0], "res");
     
     // Check expression: a << b >> c
     auto* expr = assignStmt->assignments[0].value.get();
@@ -870,7 +876,7 @@ void test_shift_with_parentheses(){
         dynamic_cast<AssignmentStmt*>(func->body->statements[0].get());
     ASSERT_NOT_NULL(assignStmt);
 
-    ASSERT_EQ(assignStmt->assignments[0].name, "res");
+    ASSERT_ASSIGN_NAME(assignStmt->assignments[0], "res");
 
     // res = a << (b >> c)
     auto* expr = assignStmt->assignments[0].value.get();
@@ -897,6 +903,9 @@ void test_shift_with_parentheses(){
     ASSERT_EQ(rightRight->name, "c");
 }
 
+void test_array_defination(){
+    
+}
 
 
 int main() {
