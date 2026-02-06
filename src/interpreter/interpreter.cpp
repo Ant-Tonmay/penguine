@@ -161,6 +161,16 @@ Value Interpreter::evaluate(const Expr* expr) {
             if (bin->op == "<") return l < r;
             if (bin->op == ">") return l > r;
             if (bin->op == "==") return l == r;
+            if (bin->op == "!=") return l != r;
+            if (bin->op == "<=") return l <= r;
+            if (bin->op == ">=") return l >= r;
+            if (bin->op == "&&") return l && r;
+            if (bin->op == "||") return l || r;
+            if (bin->op == "^") return l ^ r;
+            if (bin->op == "&") return l & r;
+            if (bin->op == "|") return l | r;
+            if (bin->op == "<<") return l << r;
+            if (bin->op == ">>") return l >> r;
         }
         // Handle strings for +
         if (std::holds_alternative<std::string>(left) && std::holds_alternative<std::string>(right)) {
@@ -168,6 +178,9 @@ Value Interpreter::evaluate(const Expr* expr) {
              if (bin->op == "==") return std::get<std::string>(left) == std::get<std::string>(right);
         }
         
+    }else if(auto un = dynamic_cast<const UnaryExpr*>(expr)){
+       Value right = evaluate(un->right.get());
+        if (un->op == "!") return !std::get<bool>(right);
     }
     return std::monostate{};
 }
