@@ -877,7 +877,6 @@ void test_shift_with_parentheses(){
     auto* topBin = dynamic_cast<BinaryExpr*>(expr);
     ASSERT_NOT_NULL(topBin);
 
-    // 🔴 THIS IS THE KEY ASSERT
     ASSERT_EQ(topBin->op, "<<");
 
     // Left: a

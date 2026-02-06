@@ -155,12 +155,42 @@ std::unique_ptr<Expr> Parser::parseLogicalOr() {
     return left;
 }
 
-std::unique_ptr<Expr> Parser::parseLogicalAnd() {
+
+std::unique_ptr<Expr> Parser::parseBitwiseAnd(){
     auto left = parseEquality();
+    while(match(TokenType::BITWISE_AND)) {
+        std::string op = previous().lexeme;
+        auto right = parseEquality();
+        left = std::make_unique<BinaryExpr>(std::move(left),op,std::move(right));
+    }
+    return left;
+}
+std::unique_ptr<Expr> Parser::parseBitwiseXor(){
+    auto left = parseBitwiseAnd();
+    while(match(TokenType::BITWISE_XOR)){
+        std::string op = previous().lexeme;
+        auto right = parseBitwiseAnd();
+        left = std::make_unique<BinaryExpr>(std::move(left),op,std::move(right));
+    }
+    return left;
+}
+
+std::unique_ptr<Expr> Parser::parseBitwiseOr(){
+    auto left = parseBitwiseXor();
+    while(match(TokenType::BITWISE_OR)){
+        std::string op = previous().lexeme;
+        auto right = parseBitwiseXor();
+        left = std::make_unique<BinaryExpr>(std::move(left),op,std::move(right));
+    }
+    return left;
+}
+
+std::unique_ptr<Expr> Parser::parseLogicalAnd() {
+    auto left = parseBitwiseOr();
 
     while (match(TokenType::AND)) { // &&
         std::string op = previous().lexeme;
-        auto right = parseEquality();
+        auto right = parseBitwiseOr();
         left = std::make_unique<BinaryExpr>(std::move(left), op, std::move(right));
     }
 

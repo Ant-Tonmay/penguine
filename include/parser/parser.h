@@ -43,4 +43,7 @@ private:
     std::unique_ptr<Expr> parseUnary();
     std::unique_ptr<Expr> parsePrimary();
     std::unique_ptr<Expr> parseShift();
+    std::unique_ptr<Expr> parseBitwiseOr();
+    std::unique_ptr<Expr> parseBitwiseAnd();
+    std::unique_ptr<Expr> parseBitwiseXor();
 };

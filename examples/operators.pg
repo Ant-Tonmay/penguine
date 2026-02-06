@@ -1,0 +1,26 @@
+{
+    main() {
+    a = 0;
+    b = 1;
+    lf = 2;
+    rf = 4;
+    c = a|b;
+    g = a&b;
+    h = a^b;
+    d = lf<<2;
+    e = rf>>2;
+    f = a && b;
+    i = a || b;
+
+    print(d);
+    print(e);
+    print(f);
+    print(c);
+    print(g);
+    print(h);
+    print(i);
+
+
+    
+  }
+}
