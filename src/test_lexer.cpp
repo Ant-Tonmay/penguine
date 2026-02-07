@@ -181,6 +181,30 @@ void test_right_shift(){
     std::cout << "test_right_shift passed" << std::endl;
 }
 
+void testReturn() {
+    Lexer lexer("return; return 5; return a+b;");
+    auto tokens = lexer.tokenize();
+    
+    // return;
+    ASSERT_TOKEN(tokens[0], TokenType::KEYWORD, "return");
+    ASSERT_TOKEN(tokens[1], TokenType::SEMICOLON, ";");
+    
+    // return 5;
+    ASSERT_TOKEN(tokens[2], TokenType::KEYWORD, "return");
+    ASSERT_TOKEN(tokens[3], TokenType::NUMBER, "5");
+    ASSERT_TOKEN(tokens[4], TokenType::SEMICOLON, ";");
+    
+    // return a+b;
+    ASSERT_TOKEN(tokens[5], TokenType::KEYWORD, "return");
+    ASSERT_TOKEN(tokens[6], TokenType::IDENTIFIER, "a");
+    ASSERT_TOKEN(tokens[7], TokenType::PLUS, "+");
+    ASSERT_TOKEN(tokens[8], TokenType::IDENTIFIER, "b");
+    ASSERT_TOKEN(tokens[9], TokenType::SEMICOLON, ";");
+    
+    ASSERT_TOKEN(tokens[10], TokenType::EOF_TOKEN, "");
+    std::cout << "testReturn passed" << std::endl;
+}
+
 int main() {
     std::cout << "Running Lexer Tests..." << std::endl;
     testBasics();
@@ -198,6 +222,7 @@ int main() {
     test_bitwise_xor(); 
     test_left_shift();
     test_right_shift();
+    testReturn();
     std::cout << "All tests passed!" << std::endl;
     return 0;
 }

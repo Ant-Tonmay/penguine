@@ -104,11 +104,114 @@ void testFunctionMixedParams() {
     ASSERT_EQ(func->params[1].isRef, true);
 }
 
+
+
+void testFunctionWithReturnVoid() {
+    std::cout << "Testing Function with Void Return..." << std::endl;
+    // func f() { return; }
+    std::vector<Token> tokens = {
+        Token(TokenType::LBRACE, "{"),
+        Token(TokenType::KEYWORD, "func"),
+        Token(TokenType::IDENTIFIER, "f"),
+        Token(TokenType::LPAREN, "("),
+        Token(TokenType::RPAREN, ")"),
+        Token(TokenType::LBRACE, "{"),
+        Token(TokenType::KEYWORD, "return"),
+        Token(TokenType::SEMICOLON, ";"),
+        Token(TokenType::RBRACE, "}"),
+        Token(TokenType::RBRACE, "}"),
+        Token(TokenType::EOF_TOKEN, "")
+    };
+
+    Parser parser(tokens);
+    auto program = parser.parse();
+    ASSERT_NOT_NULL(program);
+    auto& func = program->functions[0];
+    
+    ASSERT_EQ(func->body->statements.size(), 1);
+    auto* returnStmt = dynamic_cast<ReturnStmt*>(func->body->statements[0].get());
+    ASSERT_NOT_NULL(returnStmt);
+    if (returnStmt->value != nullptr) {
+        std::cerr << "Assertion failed: returnStmt->value is not null" << std::endl;
+        exit(1);
+    }
+}
+
+void testFunctionWithReturnValue() {
+    std::cout << "Testing Function with Return Value..." << std::endl;
+    // func g() { return 10; }
+    std::vector<Token> tokens = {
+        Token(TokenType::LBRACE, "{"),
+        Token(TokenType::KEYWORD, "func"),
+        Token(TokenType::IDENTIFIER, "g"),
+        Token(TokenType::LPAREN, "("),
+        Token(TokenType::RPAREN, ")"),
+        Token(TokenType::LBRACE, "{"),
+        Token(TokenType::KEYWORD, "return"),
+        Token(TokenType::NUMBER, "10"),
+        Token(TokenType::SEMICOLON, ";"),
+        Token(TokenType::RBRACE, "}"),
+        Token(TokenType::RBRACE, "}"),
+        Token(TokenType::EOF_TOKEN, "")
+    };
+
+    Parser parser(tokens);
+    auto program = parser.parse();
+    ASSERT_NOT_NULL(program);
+    auto& func = program->functions[0];
+    
+    auto* returnStmt = dynamic_cast<ReturnStmt*>(func->body->statements[0].get());
+    ASSERT_NOT_NULL(returnStmt);
+    
+    auto* numExpr = dynamic_cast<NumberExpr*>(returnStmt->value.get());
+    ASSERT_NOT_NULL(numExpr);
+    ASSERT_EQ(numExpr->value, "10");
+}
+
+void testFunctionWithReturnExpression() {
+    std::cout << "Testing Function with Return Expression..." << std::endl;
+    // func h(a, b) { return a + b; }
+    std::vector<Token> tokens = {
+        Token(TokenType::LBRACE, "{"),
+        Token(TokenType::KEYWORD, "func"),
+        Token(TokenType::IDENTIFIER, "h"),
+        Token(TokenType::LPAREN, "("),
+        Token(TokenType::IDENTIFIER, "a"),
+        Token(TokenType::COMMA, ","),
+        Token(TokenType::IDENTIFIER, "b"),
+        Token(TokenType::RPAREN, ")"),
+        Token(TokenType::LBRACE, "{"),
+        Token(TokenType::KEYWORD, "return"),
+        Token(TokenType::IDENTIFIER, "a"),
+        Token(TokenType::PLUS, "+"),
+        Token(TokenType::IDENTIFIER, "b"),
+        Token(TokenType::SEMICOLON, ";"),
+        Token(TokenType::RBRACE, "}"),
+        Token(TokenType::RBRACE, "}"),
+        Token(TokenType::EOF_TOKEN, "")
+    };
+
+    Parser parser(tokens);
+    auto program = parser.parse();
+    ASSERT_NOT_NULL(program);
+    auto& func = program->functions[0];
+    
+    auto* returnStmt = dynamic_cast<ReturnStmt*>(func->body->statements[0].get());
+    ASSERT_NOT_NULL(returnStmt);
+    
+    auto* binExpr = dynamic_cast<BinaryExpr*>(returnStmt->value.get());
+    ASSERT_NOT_NULL(binExpr);
+    ASSERT_EQ(binExpr->op, "+");
+}
+
 int main() {
     try {
         testFunctionCallByValue();
         testFunctionCallByReference();
         testFunctionMixedParams();
+        testFunctionWithReturnVoid();
+        testFunctionWithReturnValue();
+        testFunctionWithReturnExpression();
         std::cout << "All function parser tests passed!" << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "Exception caught: " << e.what() << std::endl;

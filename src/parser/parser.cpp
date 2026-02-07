@@ -54,6 +54,16 @@ std::unique_ptr<Stmt> Parser::parseStatement() {
     if (check(TokenType::KEYWORD) && peek().lexeme == "if") {
         return parseIfStmt();
     }
+    if (match(TokenType::KEYWORD) && previous().lexeme == "return") {
+        std::unique_ptr<Expr> value = nullptr;
+
+        if (!check(TokenType::SEMICOLON)) {
+            value = parseExpression();
+        }
+
+        consume(TokenType::SEMICOLON, "Expect ';' after return");
+        return std::make_unique<ReturnStmt>(std::move(value));
+    }
     
     auto stmt = parseAssignmentStmt();
     consume(TokenType::SEMICOLON, "Expect ';' after assignment statement.");

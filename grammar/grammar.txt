@@ -6,13 +6,15 @@ param      → ("ref" ":")? IDENTIFIER
 block          → "{" statement_list "}"
 statement_list → statement statement_list | ε
 
-statement →
-      print_stmt ";"
+statement   →
+      return_stmt ";"
     | assignment_stmt ";"
-    | for_stmt
+    | print_stmt ";"
     | if_stmt
+    | for_stmt
     | block
-
+    
+return_stmt → "return" expression?
 print_stmt     → "print" "(" string ")"
 
 if_stmt        → "if" "(" expression ")" block  else_part

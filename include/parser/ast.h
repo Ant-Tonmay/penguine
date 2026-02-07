@@ -152,3 +152,9 @@ struct MemberExpr : Expr {
     MemberExpr(std::unique_ptr<Expr> object, std::string name)
         : object(std::move(object)), name(name) {}
 };
+struct ReturnStmt : Stmt {
+    std::unique_ptr<Expr> value; 
+
+    explicit ReturnStmt(std::unique_ptr<Expr> value)
+        : value(std::move(value)) {}
+};
