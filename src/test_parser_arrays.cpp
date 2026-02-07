@@ -12,6 +12,7 @@
 std::unique_ptr<Program> parseTokens(std::vector<Token>& tokens) {
     std::vector<Token> progTokens = {
         Token(TokenType::LBRACE, "{"),
+        Token(TokenType::KEYWORD, "func"),
         Token(TokenType::IDENTIFIER, "main"),
         Token(TokenType::LPAREN, "("),
         Token(TokenType::RPAREN, ")"),

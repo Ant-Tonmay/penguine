@@ -34,6 +34,7 @@ enum class TokenType {
     RBRACE,
     SEMICOLON,
     COMMA,
+    COLON,
     STRING,
     DOT,
     KEYWORD,

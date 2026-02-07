@@ -17,16 +17,6 @@ std::unique_ptr<Program> Parser::parse() {
     return program;
 }
 
-std::unique_ptr<Function> Parser::parseFunction() {
-    
-    Token nameToken = consume(TokenType::IDENTIFIER, "Expect function name (e.g. 'main').");
-    
-    consume(TokenType::LPAREN, "Expect '(' after function name.");
-    consume(TokenType::RPAREN, "Expect ')' after '('.");
-    
-    auto body = parseBlock();
-    return std::make_unique<Function>(nameToken.lexeme, std::move(body));
-}
 
 std::unique_ptr<Block> Parser::parseBlock() {
     consume(TokenType::LBRACE, "Expect '{' to start block.");
@@ -369,3 +359,41 @@ Token Parser::consume(TokenType type, const std::string& message) {
     if (check(type)) return advance();
     throw std::runtime_error(message + " Found: " + peek().lexeme);
 }
+std::vector<Param> Parser::parseParams(){
+
+    std::vector<Param> params;
+    if (check(TokenType::RPAREN)) return params;
+     do {
+        bool isRef = false;
+
+        // Detect ref:
+        if (check(TokenType::IDENTIFIER) && peek().lexeme == "ref") {
+            advance(); // consume "ref"
+            consume(TokenType::COLON, "Expected ':' after 'ref'");
+            isRef = true;
+        }
+
+        consume(TokenType::IDENTIFIER, "Expected parameter name");
+        std::string name = previous().lexeme;
+
+        params.emplace_back(name, isRef);
+
+    } while (match(TokenType::COMMA));
+
+    return params;
+}
+
+std::unique_ptr<Function> Parser::parseFunction() {
+    consume(TokenType::KEYWORD, "Expected 'func'");
+    consume(TokenType::IDENTIFIER, "Expected function name");
+    std::string name = previous().lexeme;
+
+    consume(TokenType::LPAREN, "Expected '(' after function name");
+    auto params = parseParams();
+    consume(TokenType::RPAREN, "Expected ')' after parameters");
+
+    auto body = parseBlock();
+
+    return std::make_unique<Function>(name, std::move(params), std::move(body));
+}
+

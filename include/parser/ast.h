@@ -93,12 +93,21 @@ struct IfStmt : Stmt {
           elseBranch(std::move(elseBranch)) {}
 };
 
+struct Param {
+    std::string name;
+    bool isRef;
+
+    Param(std::string name, bool isRef)
+        : name(std::move(name)), isRef(isRef) {}
+};
+
 struct Function : ASTNode {
     std::string name;
+    std::vector<Param> params;
     std::unique_ptr<Block> body;
 
-    Function(std::string name, std::unique_ptr<Block> body)
-        : name(name), body(std::move(body)) {}
+    Function(std::string name, std::vector<Param> params, std::unique_ptr<Block> body)
+        : name(std::move(name)), params(std::move(params)), body(std::move(body)) {}
 };
 
 struct Program : ASTNode {

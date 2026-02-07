@@ -180,6 +180,7 @@ std::vector<Token> Lexer::tokenize() {
             case '{': addToken(TokenType::LBRACE, "{"); break;
             case '}': addToken(TokenType::RBRACE, "}"); break;
             case ';': addToken(TokenType::SEMICOLON, ";"); break;
+            case ':': addToken(TokenType::COLON, ":"); break;
             case ',': addToken(TokenType::COMMA, ","); break;
             case '.': addToken(TokenType::DOT, "."); break;
             case '"': string(); break;

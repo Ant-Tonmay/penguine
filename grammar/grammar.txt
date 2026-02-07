@@ -1,6 +1,7 @@
-program        → "{" function_list "}"
-function_list  → function function_list | ε
-function       → "main" "(" ")" block
+program    → "{" function* "}"
+function   → "func" IDENTIFIER "(" params? ")" block
+params     → param ("," param)*
+param      → ("ref" ":")? IDENTIFIER
 
 block          → "{" statement_list "}"
 statement_list → statement statement_list | ε
@@ -26,8 +27,29 @@ assignment      → IDENTIFIER "=" expression
 for_stmt →
     "for" "(" assignment_stmt ";" expression ";" assignment_stmt ")" block
 
-expression → term expression'
-expression' → ("+" | "-") term expression' | ε
-term → factor term'
-term' → ("*" | "/") factor term' | ε
-factor → NUMBER | IDENTIFIER | "(" expression ")"
+
+expression      → logical_or
+
+logical_or      → logical_and ( "||" logical_and )*
+
+logical_and     → bitwise_or  ( "&&" bitwise_or )*
+
+bitwise_or      → bitwise_xor ( "|" bitwise_xor )*
+
+bitwise_xor     → bitwise_and ( "^" bitwise_and )*
+
+bitwise_and     → equality    ( "&" equality )*
+
+equality        → comparison  ( ("==" | "!=") comparison )*
+
+comparison      → shift       ( ("<" | "<=" | ">" | ">=") shift )*
+
+shift           → additive    ( ("<<" | ">>") additive )*
+
+additive        → multiplicative ( ("+" | "-") multiplicative )*
+
+multiplicative  → unary       ( ("*" | "/") unary )*
+
+unary           → ("!" | "-") unary | primary
+
+primary         → NUMBER | STRING | IDENTIFIER | "(" expression ")"

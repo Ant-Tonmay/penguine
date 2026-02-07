@@ -130,6 +130,7 @@ void testAssignmentStmt() {
     
     std::vector<Token> progTokens = {
         Token(TokenType::LBRACE, "{"),
+        Token(TokenType::KEYWORD, "func"),
         Token(TokenType::IDENTIFIER, "main"),
         Token(TokenType::LPAREN, "("),
         Token(TokenType::RPAREN, ")"),
@@ -171,6 +172,7 @@ void testForStmt() {
     
     std::vector<Token> tokens = {
         Token(TokenType::LBRACE, "{"),
+        Token(TokenType::KEYWORD, "func"),
         Token(TokenType::IDENTIFIER, "main"),
         Token(TokenType::LPAREN, "("),
         Token(TokenType::RPAREN, ")"),
@@ -236,6 +238,7 @@ void test_logical_operators(){
     std::cout << "a && b || c" << std::endl;
     std::vector<Token> tokens = {
         Token(TokenType::LBRACE, "{"),
+        Token(TokenType::KEYWORD, "func"),
         Token(TokenType::IDENTIFIER, "main"),
         Token(TokenType::LPAREN, "("),
         Token(TokenType::RPAREN, ")"),
@@ -295,6 +298,7 @@ void test_logical_operator_level2(){
     std::cout << "a < b && c < d" << std::endl;
     std::vector<Token> tokens = {
         Token(TokenType::LBRACE, "{"),
+        Token(TokenType::KEYWORD, "func"),
         Token(TokenType::IDENTIFIER, "main"),
         Token(TokenType::LPAREN, "("),
         Token(TokenType::RPAREN, ")"),
@@ -356,6 +360,7 @@ void test_logical_operator_level3(){
     std::cout << "a <= b && c >= d || e != f" << std::endl;
     std::vector<Token> tokens = {
         Token(TokenType::LBRACE, "{"),
+        Token(TokenType::KEYWORD, "func"),
         Token(TokenType::IDENTIFIER, "main"),
         Token(TokenType::LPAREN, "("),
         Token(TokenType::RPAREN, ")"),
@@ -452,6 +457,7 @@ void test_logical_operator_level4(){
     //a <= b && c >= d || e != f && g > h
     std::vector<Token> tokens = {
         Token(TokenType::LBRACE, "{"),
+        Token(TokenType::KEYWORD, "func"),
         Token(TokenType::IDENTIFIER, "main"),
         Token(TokenType::LPAREN, "("),
         Token(TokenType::RPAREN, ")"),
@@ -571,6 +577,7 @@ void test_logical_operator_level5(){
     std::cout << "(a <= b && c >= d || e != f && g > h)" << std::endl;
     std::vector<Token> tokens = {
         Token(TokenType::LBRACE, "{"),
+        Token(TokenType::KEYWORD, "func"),
         Token(TokenType::IDENTIFIER, "main"),
         Token(TokenType::LPAREN, "("),
         Token(TokenType::RPAREN, ")"),
@@ -692,6 +699,7 @@ void test_left_shift(){
     std::cout << "(a << b)" << std::endl;
     std::vector<Token> tokens = {
         Token(TokenType::LBRACE, "{"),
+        Token(TokenType::KEYWORD, "func"),
         Token(TokenType::IDENTIFIER, "main"),
         Token(TokenType::LPAREN, "("),
         Token(TokenType::RPAREN, ")"),
@@ -739,6 +747,7 @@ void test_right_shift(){
     std::cout << "(a >> b)" << std::endl;
     std::vector<Token> tokens = {
         Token(TokenType::LBRACE, "{"),
+        Token(TokenType::KEYWORD, "func"),
         Token(TokenType::IDENTIFIER, "main"),
         Token(TokenType::LPAREN, "("),
         Token(TokenType::RPAREN, ")"),
@@ -786,6 +795,7 @@ void test_shift_operators(){
     std::cout << "(a << b >> c)" << std::endl;
     std::vector<Token> tokens = {
         Token(TokenType::LBRACE, "{"),
+        Token(TokenType::KEYWORD, "func"),
         Token(TokenType::IDENTIFIER, "main"),
         Token(TokenType::LPAREN, "("),
         Token(TokenType::RPAREN, ")"),
@@ -846,6 +856,7 @@ void test_shift_with_parentheses(){
 
     std::vector<Token> tokens = {
         Token(TokenType::LBRACE, "{"),
+        Token(TokenType::KEYWORD, "func"),
         Token(TokenType::IDENTIFIER, "main"),
         Token(TokenType::LPAREN, "("),
         Token(TokenType::RPAREN, ")"),
