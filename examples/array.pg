@@ -1,0 +1,32 @@
+{   
+
+    func main(){
+        
+        arr = [1,2,3,4,5]; // can be expanded in future as there is no fixed() method metioned
+        print(arr[0]);
+        print(arr[1]);
+        print(arr[2]);
+        print(arr[3]);
+        print(arr[4]);
+
+        brr = fixed(5); // size cannot be increased . fixed(size)
+        for(i = 0; i < 5; i = i + 1){
+            brr[i] = i;
+            print(brr[i]);
+        }   
+        crr =[]; // empty dynamic array
+
+        for(i = 0; i < 5; i = i + 1){
+            crr.push(i);
+            print(crr[i]);
+        }
+        drr = fixed(5,0); // array of size 5,initised with 0 . fixed(size,initised_ele)
+        n = 10;
+        multidim1 = [fixed(n,[])]; // 2d array row is fixed as n
+        multidim2 = [fixed(n,[fixed(n)])]; // 2d array of n*n
+        multidim3 = [fixed(n,[fixed(n,[fixed(n)])])]; // 3d array n*n*n
+        multidim4 = []; // can add anything an array , and array of array truly dynamic
+        
+        
+    }
+}

@@ -1,0 +1,26 @@
+{ 
+    func f(arr)
+    { 
+        return arr;
+    } 
+    func g(ref: brr) 
+    { 
+        return 0;
+    } 
+    func h (arr , ref: brr)
+    { 
+        print("Nothing to print");
+    }
+
+    func p(){
+        print("Hello");
+    }
+    func main() 
+    { arr= [1,2,4]; 
+    brr = [[]] ; 
+    f(arr); 
+    g(brr); 
+    h(arr,brr); 
+    p();
+    } 
+}
