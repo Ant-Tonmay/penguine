@@ -114,14 +114,45 @@ std::vector<Token> Lexer::tokenize() {
         char c = advance();
 
         switch (c) {
-            case '+': addToken(TokenType::PLUS, "+"); break;
-            case '-': addToken(TokenType::MINUS, "-"); break;
-            case '*': addToken(TokenType::STAR, "*"); break;
-            case '%': addToken(TokenType::MOD_OP, "%"); break;  
+            case '+': 
+                if(peek() =='='){
+                    advance();
+                    addToken(TokenType::PLUS_EQUAL,"+=");
+                }else{
+                    addToken(TokenType::PLUS,"+");
+                }
+                break;
+            case '-':
+                if(peek() =='='){
+                    advance();
+                    addToken(TokenType::MINUS_EQUAL,"-=");
+                }else{
+                    addToken(TokenType::MINUS,"-");
+                }
+                break;
+            case '*': 
+                if(peek() == '='){
+                    advance();
+                    addToken(TokenType::STAR_EQUAL,"*=");
+                }else{
+                    addToken(TokenType::STAR, "*");
+                }
+                break;
+            case '%':
+                if(peek() == '='){
+                        advance();
+                        addToken(TokenType::MOD_OP_EQUAL,"%=");
+                }else{
+                        addToken(TokenType::MOD_OP, "%");
+                }
+                break; 
             case '/': 
                 if (peek() == '/') {
                     while (peek() != '\n' && !isAtEnd()) advance();
-                } else {
+                }else if(peek() == '='){
+                    advance();
+                    addToken(TokenType::SLASH_EQUAL,"/=");
+                }else {
                     addToken(TokenType::SLASH, "/");
                 }
                 break;
@@ -129,6 +160,9 @@ std::vector<Token> Lexer::tokenize() {
                 if(peek() == '&'){
                     advance();
                     addToken(TokenType::AND, "&&");
+                }else if(peek() == '='){
+                    advance();
+                    addToken(TokenType::BITWISE_AND_EQUAL, "&=");
                 }else{
                     addToken(TokenType::BITWISE_AND, "&");
                 }
@@ -137,12 +171,20 @@ std::vector<Token> Lexer::tokenize() {
                 if(peek() == '|'){
                     advance();
                     addToken(TokenType::OR, "||");
+                }else if(peek() == '='){
+                    advance();
+                    addToken(TokenType::BITWISE_OR_EQUAL, "|=");
                 }else{
                     addToken(TokenType::BITWISE_OR, "|");
                 }
                 break;
             case '^' :
-                addToken(TokenType::BITWISE_XOR, "^");
+                if(peek() =='='){
+                    advance();
+                    addToken(TokenType::XOR_EQUAL,"^=");
+                }else{
+                    addToken(TokenType::BITWISE_XOR, "^");
+                }
                 break;
             case '!' :
                 if(peek() == '='){

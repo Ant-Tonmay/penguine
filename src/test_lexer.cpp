@@ -24,6 +24,84 @@ void testBasics() {
     
     std::cout << "testBasics passed" << std::endl;
 }
+void test_shortcut_op1(){
+    Lexer lexer("a+=b");
+    auto tokens = lexer.tokenize();
+
+    ASSERT_TOKEN(tokens[0],TokenType::IDENTIFIER , "a");
+    ASSERT_TOKEN(tokens[1],TokenType::PLUS_EQUAL , "+=");
+    ASSERT_TOKEN(tokens[2],TokenType::IDENTIFIER , "b");
+    ASSERT_TOKEN(tokens[3], TokenType::EOF_TOKEN, "");
+     std::cout << "test_shortcut_op1 passed" << std::endl;
+}
+
+void test_shortcut_op2(){
+    Lexer lexer("a -= b");
+    auto tokens = lexer.tokenize();
+
+    ASSERT_TOKEN(tokens[0],TokenType::IDENTIFIER , "a");
+    ASSERT_TOKEN(tokens[1],TokenType::MINUS_EQUAL , "-=");
+    ASSERT_TOKEN(tokens[2],TokenType::IDENTIFIER , "b");
+    ASSERT_TOKEN(tokens[3], TokenType::EOF_TOKEN, "");
+    std::cout << "test_shortcut_op2 passed" << std::endl;
+}
+
+void test_shortcut_op3(){
+    Lexer lexer("a ^= b");
+    auto tokens = lexer.tokenize();
+
+    ASSERT_TOKEN(tokens[0],TokenType::IDENTIFIER , "a");
+    ASSERT_TOKEN(tokens[1],TokenType::XOR_EQUAL , "^=");
+    ASSERT_TOKEN(tokens[2],TokenType::IDENTIFIER , "b");
+    ASSERT_TOKEN(tokens[3], TokenType::EOF_TOKEN, "");
+    std::cout << "test_shortcut_op3 passed" << std::endl;
+}
+
+void test_shortcut_op4(){
+    Lexer lexer("a *= b");
+    auto tokens = lexer.tokenize();
+
+    ASSERT_TOKEN(tokens[0],TokenType::IDENTIFIER , "a");
+    ASSERT_TOKEN(tokens[1],TokenType::STAR_EQUAL , "*=");
+    ASSERT_TOKEN(tokens[2],TokenType::IDENTIFIER , "b");
+    ASSERT_TOKEN(tokens[3], TokenType::EOF_TOKEN, "");
+    std::cout << "test_shortcut_op4 passed" << std::endl;
+}
+
+void test_shortcut_op5(){
+    Lexer lexer("a&=b");
+    auto tokens = lexer.tokenize();
+
+    ASSERT_TOKEN(tokens[0],TokenType::IDENTIFIER , "a");
+    ASSERT_TOKEN(tokens[1],TokenType::BITWISE_AND_EQUAL , "&=");
+    ASSERT_TOKEN(tokens[2],TokenType::IDENTIFIER , "b");
+    ASSERT_TOKEN(tokens[3], TokenType::EOF_TOKEN, "");
+    std::cout << "test_shortcut_op5 passed" << std::endl;
+}
+
+void test_shortcut_op6(){
+    Lexer lexer("a|=b");
+    auto tokens = lexer.tokenize();
+
+    ASSERT_TOKEN(tokens[0],TokenType::IDENTIFIER , "a");
+    ASSERT_TOKEN(tokens[1],TokenType::BITWISE_OR_EQUAL , "|=");
+    ASSERT_TOKEN(tokens[2],TokenType::IDENTIFIER , "b");
+    ASSERT_TOKEN(tokens[3], TokenType::EOF_TOKEN, "");
+    std::cout << "test_shortcut_op6 passed" << std::endl;
+}
+
+void test_shortcut_op7(){
+    Lexer lexer("a%=b");
+    auto tokens = lexer.tokenize();
+
+    ASSERT_TOKEN(tokens[0],TokenType::IDENTIFIER , "a");
+    ASSERT_TOKEN(tokens[1],TokenType::MOD_OP_EQUAL , "%=");
+    ASSERT_TOKEN(tokens[2],TokenType::IDENTIFIER , "b");
+    ASSERT_TOKEN(tokens[3], TokenType::EOF_TOKEN, "");
+    std::cout << "test_shortcut_op7 passed" << std::endl;
+}
+
+
 
 void testKeywords() {
     Lexer lexer("if else while return func");
@@ -223,6 +301,13 @@ int main() {
     test_left_shift();
     test_right_shift();
     testReturn();
+    test_shortcut_op1();
+    test_shortcut_op2();
+    test_shortcut_op3();
+    test_shortcut_op4();
+    test_shortcut_op5();
+    test_shortcut_op6();
+    test_shortcut_op7();
     std::cout << "All tests passed!" << std::endl;
     return 0;
 }
