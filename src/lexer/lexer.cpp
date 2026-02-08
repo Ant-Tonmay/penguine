@@ -97,7 +97,9 @@ void Lexer::identifier() {
         {"else", TokenType::KEYWORD},
         {"while", TokenType::KEYWORD},
         {"return", TokenType::KEYWORD},
-        {"func", TokenType::KEYWORD}
+        {"func", TokenType::KEYWORD},
+        {"true", TokenType::KEYWORD},
+        {"false", TokenType::KEYWORD}
     };
 
     if (keywords.count(value)) {
@@ -115,6 +117,7 @@ std::vector<Token> Lexer::tokenize() {
             case '+': addToken(TokenType::PLUS, "+"); break;
             case '-': addToken(TokenType::MINUS, "-"); break;
             case '*': addToken(TokenType::STAR, "*"); break;
+            case '%': addToken(TokenType::MOD_OP, "%"); break;  
             case '/': 
                 if (peek() == '/') {
                     // Comment - consume until end of line

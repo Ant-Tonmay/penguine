@@ -120,6 +120,7 @@ Value ExprEvaluator::visit(const BinaryExpr* expr, Environment* env) {
         if (expr->op == ">=") return l >= r;
         if (expr->op == "==") return l == r;
         if (expr->op == "!=") return l != r;
+        if (expr->op == "%") return l % r;
         
         // Bitwise operations
         if (expr->op == "|") return l | r;
@@ -133,7 +134,7 @@ Value ExprEvaluator::visit(const BinaryExpr* expr, Environment* env) {
         if (expr->op == "||") return (l != 0) || (r != 0);
     }
     
-        if (std::holds_alternative<std::string>(left) && std::holds_alternative<std::string>(right))
+    if (std::holds_alternative<std::string>(left) && std::holds_alternative<std::string>(right))
     {
         if (expr->op == "+")
             return std::get<std::string>(left) + std::get<std::string>(right);

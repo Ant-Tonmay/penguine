@@ -278,7 +278,7 @@ std::unique_ptr<Expr> Parser::parseAdditive() {
 std::unique_ptr<Expr> Parser::parseMultiplicative() {
     auto left = parseUnary();
 
-    while (match(TokenType::STAR) || match(TokenType::SLASH)) {
+    while (match(TokenType::STAR) || match(TokenType::SLASH) || match(TokenType::MOD_OP)) {
         std::string op = previous().lexeme;
         auto right = parseUnary();
         left = std::make_unique<BinaryExpr>(std::move(left), op, std::move(right));
