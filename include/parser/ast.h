@@ -4,6 +4,7 @@
 #include <vector>
 #include <memory>
 #include <iostream>
+#include "lexer/lexer.h"
 
 struct ASTNode {
     virtual ~ASTNode() = default;
@@ -53,12 +54,14 @@ struct PrintStmt : Stmt {
 };
 
 struct Assignment {
-    std::unique_ptr<Expr> target; 
+    std::unique_ptr<Expr> target;
+    TokenType op;      
     std::unique_ptr<Expr> value;
 
     Assignment(std::unique_ptr<Expr> target,
+               TokenType op,
                std::unique_ptr<Expr> value)
-        : target(std::move(target)), value(std::move(value)) {}
+        : target(std::move(target)), op(op), value(std::move(value)) {}
 };
 
 

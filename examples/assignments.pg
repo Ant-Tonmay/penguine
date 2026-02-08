@@ -1,0 +1,29 @@
+{
+    func main(){
+        a = 10;
+        b = 5;
+
+        c = a+b;
+        c+=1;
+        print(c);
+        d = 0;
+        d+=a;
+        print(d);
+        e = 20;
+        e/=a;
+        print(e);
+
+        f = 1;
+        f*=a;
+        print(f);
+
+        g = 1;
+        h = 0;
+        h|=g;
+        print(h);
+        m=0;
+        g &= m;
+        print(g);
+        
+    }
+}

@@ -2,6 +2,7 @@
 #include <iostream>
 #include <stdexcept>
 
+
 Parser::Parser(const std::vector<Token>& tokens) : tokens(tokens), current(0) {}
 
 std::unique_ptr<Program> Parser::parse() {
@@ -17,6 +18,22 @@ std::unique_ptr<Program> Parser::parse() {
     return program;
 }
 
+bool Parser::isAssignmentOperator(TokenType t) {
+    switch (t) {
+        case TokenType::EQUAL:
+        case TokenType::PLUS_EQUAL:
+        case TokenType::MINUS_EQUAL:
+        case TokenType::STAR_EQUAL:
+        case TokenType::SLASH_EQUAL:
+        case TokenType::MOD_OP_EQUAL:
+        case TokenType::BITWISE_AND_EQUAL:
+        case TokenType::BITWISE_OR_EQUAL:
+        case TokenType::XOR_EQUAL:
+            return true;
+        default:
+            return false;
+    }
+}
 
 std::unique_ptr<Block> Parser::parseBlock() {
     consume(TokenType::LBRACE, "Expect '{' to start block.");
@@ -29,6 +46,8 @@ std::unique_ptr<Block> Parser::parseBlock() {
     consume(TokenType::RBRACE, "Expect '}' to end block.");
     return block;
 }
+
+
 
 std::unique_ptr<Stmt> Parser::parseStatement() {
   
@@ -66,26 +85,36 @@ std::unique_ptr<Stmt> Parser::parseStatement() {
     }
     
     auto expr = parseExpression();
-
-    if (check(TokenType::EQUAL)) {
-        
+    TokenType opType = peek().type;
+    if (isAssignmentOperator(opType)) {
+        advance();
         std::vector<Assignment> assignments;
-        
-        consume(TokenType::EQUAL, "Expect '='.");
         auto value = parseExpression();
-        assignments.emplace_back(std::move(expr), std::move(value));
+        
+    
+        assignments.emplace_back(std::move(expr), opType, std::move(value));
         
         while (match(TokenType::COMMA)) {
             auto nextTarget = parseExpression();
-            consume(TokenType::EQUAL, "Expect '='.");
+            
+            TokenType nextOp = peek().type;
+            if (nextOp == TokenType::EQUAL || nextOp == TokenType::PLUS_EQUAL ||
+                nextOp == TokenType::SLASH_EQUAL || nextOp == TokenType::MINUS_EQUAL ||
+                nextOp == TokenType::STAR_EQUAL || nextOp == TokenType::MOD_OP_EQUAL ||
+                nextOp == TokenType::BITWISE_AND_EQUAL || nextOp == TokenType::BITWISE_OR_EQUAL ||
+                nextOp == TokenType::XOR_EQUAL
+                ) {
+                advance();
+            } else {
+                throw std::runtime_error("Expect assignment operator."); 
+            }
+            
             auto nextValue = parseExpression();
-            assignments.emplace_back(std::move(nextTarget), std::move(nextValue));
+            assignments.emplace_back(std::move(nextTarget), nextOp, std::move(nextValue));
         }
-
         consume(TokenType::SEMICOLON, "Expect ';' after assignment statement.");
         return std::make_unique<AssignmentStmt>(std::move(assignments));
     }
-    
     consume(TokenType::SEMICOLON, "Expect ';' after expression.");
     return std::make_unique<ExprStmt>(std::move(expr));
 }
@@ -105,10 +134,19 @@ std::unique_ptr<AssignmentStmt> Parser::parseAssignmentStmt() {
     
     do {
         Token nameToken = consume(TokenType::IDENTIFIER, "Expect variable name.");
-        consume(TokenType::EQUAL, "Expect '=' after variable name.");
+        
+        TokenType opType = peek().type;
+        if (isAssignmentOperator(opType)) {
+            advance(); 
+        } else {
+            throw std::runtime_error("Expect assignment operator after variable name.");
+        }
         auto value = parseExpression();
         auto target = std::make_unique<VarExpr>(nameToken.lexeme);
-        assignments.emplace_back(std::move(target), std::move(value));
+        
+        // Pass the operator type to Assignment
+        assignments.emplace_back(std::move(target), opType, std::move(value));
+        
     } while (match(TokenType::COMMA));
     
     return std::make_unique<AssignmentStmt>(std::move(assignments));

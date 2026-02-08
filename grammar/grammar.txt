@@ -24,7 +24,17 @@ else_part      →
             | ε
 
 assignment_stmt → assignment ("," assignment)*
-assignment      → IDENTIFIER "=" expression
+assignment →
+    lvalue assignment_op expression
+
+lvalue
+    → IDENTIFIER
+    | primary "[" expression "]"
+    
+assignment_op →
+      "="
+    | "+=" | "-=" | "*=" | "/=" | "%="
+    | "&=" | "|=" | "^="
 
 for_stmt →
     "for" "(" assignment_stmt ";" expression ";" assignment_stmt ")" block

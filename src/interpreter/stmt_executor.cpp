@@ -40,32 +40,78 @@ void StmtExecutor::visit(const PrintStmt* stmt, Environment* env) {
     std::cout << std::endl;
 }
 
+Value performCompoundAssignment(TokenType op, const Value& currentVal, const Value& rightVal) {
+    auto isInt = [](const Value& v) { return std::holds_alternative<int>(v); };
+    auto isDouble = [](const Value& v) { return std::holds_alternative<double>(v); }; 
+    
+    if (std::holds_alternative<int>(currentVal) && std::holds_alternative<int>(rightVal)) {
+        int l = std::get<int>(currentVal);
+        int r = std::get<int>(rightVal);
+        
+        switch (op) {
+            case TokenType::PLUS_EQUAL: return l + r;
+            case TokenType::MINUS_EQUAL: return l - r;
+            case TokenType::STAR_EQUAL: return l * r;
+            case TokenType::SLASH_EQUAL: 
+                if (r == 0) throw std::runtime_error("Division by zero in compound assignment.");
+                return l / r; 
+            case TokenType::MOD_OP_EQUAL:
+                 if (r == 0) throw std::runtime_error("Modulo by zero in compound assignment.");
+                 return l % r;
+            case TokenType::BITWISE_AND_EQUAL: return l & r;
+            case TokenType::BITWISE_OR_EQUAL: return l | r;
+            case TokenType::XOR_EQUAL: return l ^ r;
+            
+            default: throw std::runtime_error("Unknown compound assignment operator.");
+        }
+    }
+    
+    throw std::runtime_error("Operands must be integers for compound assignment.");
+}
+
 void StmtExecutor::visit(const AssignmentStmt* stmt, Environment* env) {
     for (const auto& assignment : stmt->assignments) {
         Value val = interpreter->evaluateExpr(assignment.value.get(), env);
         
         if (auto var = dynamic_cast<const VarExpr*>(assignment.target.get())) {
-            try {
-                env->assign(var->name, val);
-            } catch (const std::runtime_error&) {
-              
-                env->define(var->name, val);
+            Value finalVal = val;
+
+            if (assignment.op != TokenType::EQUAL) {
+                
+                Value currentVal = env->get(var->name);
+                finalVal = performCompoundAssignment(assignment.op, currentVal, val);
             }
-        } else if (auto idx = dynamic_cast<const IndexExpr*>(assignment.target.get())) {
+            try {
+                env->assign(var->name, finalVal);
+            } catch (const std::runtime_error&) {
+                if (assignment.op == TokenType::EQUAL) {
+                     env->define(var->name, finalVal);
+                } else {
+                     throw std::runtime_error("Undefined variable '" + var->name + "' for compound assignment.");
+                }
+            }
+        } 
+        else if (auto idx = dynamic_cast<const IndexExpr*>(assignment.target.get())) {
+          
             Value arrVal = interpreter->evaluateExpr(idx->array.get(), env);
             Value idxVal = interpreter->evaluateExpr(idx->index.get(), env);
-            
             if (std::holds_alternative<ArrayObject*>(arrVal) && std::holds_alternative<int>(idxVal)) {
                 auto arr = std::get<ArrayObject*>(arrVal);
                 int i = std::get<int>(idxVal);
-                if (i >= 0 && (size_t)i < arr->length) {
-                    arr->data[i] = val; // Deep copy? Primitive values are copy. Array/Obj are ptr.
-                } else {
-                    throw std::runtime_error("Index out of bounds");
+                if (i < 0 || i >= arr->length) {
+                    throw std::runtime_error("Array index out of bounds.");
                 }
+                Value finalVal = val;
+                if (assignment.op != TokenType::EQUAL) {
+                    Value currentVal = arrVal;
+                    finalVal = performCompoundAssignment(assignment.op, currentVal, val);
+                }
+                arr->data[i] = finalVal;
             } else {
-                throw std::runtime_error("Invalid assignment target (index/array type mismatch)");
+                throw std::runtime_error("Invalid array assignment target.");
             }
+        } else {
+             throw std::runtime_error("Invalid assignment target.");
         }
     }
 }
