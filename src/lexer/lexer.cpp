@@ -88,7 +88,7 @@ void Lexer::string() {
 
 void Lexer::identifier() {
     size_t start = current - 1;
-    while (isalpha(peek()) || peek() == '_') advance();
+    while (isalnum(peek()) || peek() == '_') advance();
 
     std::string value = source.substr(start, current - start);
     
@@ -115,7 +115,14 @@ std::vector<Token> Lexer::tokenize() {
             case '+': addToken(TokenType::PLUS, "+"); break;
             case '-': addToken(TokenType::MINUS, "-"); break;
             case '*': addToken(TokenType::STAR, "*"); break;
-            case '/': addToken(TokenType::SLASH, "/"); break;
+            case '/': 
+                if (peek() == '/') {
+                    // Comment - consume until end of line
+                    while (peek() != '\n' && !isAtEnd()) advance();
+                } else {
+                    addToken(TokenType::SLASH, "/");
+                }
+                break;
             case '&' :
                 if(peek() == '&'){
                     advance();

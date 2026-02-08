@@ -1,111 +1,46 @@
 #include <iostream>
-#include <string>
-#include <vector>
-#include <cassert>
+#include <fstream>
 #include <sstream>
+#include <vector>
+#include <string>
 
 #include "lexer/lexer.h"
 #include "parser/parser.h"
 #include "interpreter/interpreter.h"
 
-struct ScopedRedirect {
+// Define a simple main to test interpreter with files
+int main(int argc, char* argv[]) {
+    if (argc < 2) {
+        std::cerr << "Usage: " << argv[0] << " <source_file>" << std::endl;
+        return 1;
+    }
+
+    std::string filepath = argv[1];
+    std::ifstream file(filepath);
+    if (!file.is_open()) {
+        std::cerr << "Error: Could not open file " << filepath << std::endl;
+        return 1;
+    }
+
     std::stringstream buffer;
-    std::streambuf* old;
+    buffer << file.rdbuf();
+    std::string source = buffer.str();
 
-    ScopedRedirect() : old(std::cout.rdbuf(buffer.rdbuf())) {}
-    ~ScopedRedirect() { std::cout.rdbuf(old); }
-
-    std::string getString() const { return buffer.str(); }
-};
-
-bool runTest(const std::string& name, const std::string& source, const std::string& expectedOutput) {
-    std::cout << "Running test: " << name << " ... ";
-    
-    Lexer lexer(source);
-    std::vector<Token> tokens = lexer.tokenize();
-    Parser parser(tokens);
-
-    std::unique_ptr<Program> program;
     try {
-        program = parser.parse();
-    } catch (const std::exception& e) {
-        std::cout << "FAILED (Parse Error: " << e.what() << ")" << std::endl;
-        return false;
-    }
+        // 1. Lexer
+        Lexer lexer(source);
+        std::vector<Token> tokens = lexer.tokenize();
 
-    if (!program) {
-        std::cout << "FAILED (Parse Error: null program)" << std::endl;
-        return false;
-    }
+        // 2. Parser
+        Parser parser(tokens);
+        std::unique_ptr<Program> program = parser.parse();
 
-    ScopedRedirect capture;
-    Interpreter interpreter;
-    
-    try {
+        // 3. Interpreter
+        Interpreter interpreter;
         interpreter.executeProgram(program.get());
+
     } catch (const std::exception& e) {
-        std::cout << "FAILED (Runtime Error: " << e.what() << ")" << std::endl;
-        return false;
-    }
-
-    std::string output = capture.getString();
-    
-    if (output == expectedOutput) {
-        std::cout << "PASSED" << std::endl;
-        return true;
-    } else {
-        std::cout << "FAILED" << std::endl;
-        std::cout << "  Expected: " << expectedOutput << "__END__" << std::endl;
-        std::cout << "  Actual:   " << output << "__END__" << std::endl;
-        return false;
-    }
-}
-
-int main() {
-    int passed = 0;
-    int total = 0;
-
-    // Test 1: Simple Print
-    total++;
-    if (runTest("Print Number", 
-        "{ main() { print(42); } }", 
-        "42\n"
-    )) passed++;
-
-    // Test 2: Arithmetic
-    total++;
-    if (runTest("Arithmetic", 
-        "{ main() { print(10 + 32); } }", 
-        "42\n"
-    )) passed++;
-
-    // Test 3: Variable Assignment and Use
-    total++;
-    if (runTest("Variables", 
-        "{ main() { x = 10; y = 20; print(x + y); } }", 
-        "30\n"
-    )) passed++;
-
-    // Test 4: For Loop
-    total++;
-    if (runTest("For Loop", 
-        "{ main() { for (i = 0; i < 3; i = i + 1) { print(i); } } }", 
-        "0\n1\n2\n"
-    )) passed++;
-    
-    // Test 5: String Concatenation
-    total++;
-    if (runTest("String Concat",
-        "{ main() { print(\"Hello \" + \"World\"); } }", 
-        "Hello World\n"
-    )) passed++;
-
-    std::cout << "\n---------------------------------------------------" << std::endl;
-    std::cout << "Test Summary: " << passed << "/" << total << " passed." << std::endl;
-    if (passed == total) {
-        std::cout << "SUCCESS: All tests passed!" << std::endl;
-    } else {
-        std::cout << "FAILURE: Some tests failed." << std::endl;
+        std::cerr << "Runtime Error: " << e.what() << std::endl;
         return 1;
     }
 

@@ -158,3 +158,9 @@ struct ReturnStmt : Stmt {
     explicit ReturnStmt(std::unique_ptr<Expr> value)
         : value(std::move(value)) {}
 };
+
+struct ExprStmt : Stmt {
+    std::unique_ptr<Expr> expression;
+    explicit ExprStmt(std::unique_ptr<Expr> expression)
+        : expression(std::move(expression)) {}
+};

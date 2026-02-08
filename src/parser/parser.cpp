@@ -65,9 +65,31 @@ std::unique_ptr<Stmt> Parser::parseStatement() {
         return std::make_unique<ReturnStmt>(std::move(value));
     }
     
-    auto stmt = parseAssignmentStmt();
-    consume(TokenType::SEMICOLON, "Expect ';' after assignment statement.");
-    return stmt;
+    // Parse expression first
+    auto expr = parseExpression();
+
+    if (check(TokenType::EQUAL)) {
+        // It's an assignment
+        std::vector<Assignment> assignments;
+        
+        consume(TokenType::EQUAL, "Expect '='.");
+        auto value = parseExpression();
+        assignments.emplace_back(std::move(expr), std::move(value));
+        
+        while (match(TokenType::COMMA)) {
+            auto nextTarget = parseExpression();
+            consume(TokenType::EQUAL, "Expect '='.");
+            auto nextValue = parseExpression();
+            assignments.emplace_back(std::move(nextTarget), std::move(nextValue));
+        }
+
+        consume(TokenType::SEMICOLON, "Expect ';' after assignment statement.");
+        return std::make_unique<AssignmentStmt>(std::move(assignments));
+    }
+    
+    // Otherwise it's an expression statement
+    consume(TokenType::SEMICOLON, "Expect ';' after expression.");
+    return std::make_unique<ExprStmt>(std::move(expr));
 }
 
 std::unique_ptr<PrintStmt> Parser::parsePrintStmt() {

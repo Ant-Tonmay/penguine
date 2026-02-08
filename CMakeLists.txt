@@ -21,6 +21,10 @@ add_library(penguin_core
     src/lexer/lexer.cpp
     src/parser/parser.cpp
     src/interpreter/interpreter.cpp
+    src/interpreter/environment.cpp
+    src/interpreter/expr_evaluator.cpp
+    src/interpreter/stmt_executor.cpp
+    src/interpreter/deep_copy.cpp
     src/symbol_table/symbol_table.cpp
 )
 
@@ -63,7 +67,7 @@ add_test(NAME SymbolTableTest COMMAND penguin_symbol_table_test)
 
 add_executable(penguin_interpreter_test src/test_interpreter.cpp)
 target_link_libraries(penguin_interpreter_test PRIVATE penguin_core)
-add_test(NAME InterpreterTest COMMAND penguin_interpreter_test)
+add_test(NAME InterpreterTest COMMAND penguin_interpreter_test ${PROJECT_SOURCE_DIR}/examples/operators.pg)
 
 
 add_executable(penguin_parser_array_test src/test_parser_arrays.cpp)
