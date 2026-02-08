@@ -65,11 +65,10 @@ std::unique_ptr<Stmt> Parser::parseStatement() {
         return std::make_unique<ReturnStmt>(std::move(value));
     }
     
-    // Parse expression first
     auto expr = parseExpression();
 
     if (check(TokenType::EQUAL)) {
-        // It's an assignment
+        
         std::vector<Assignment> assignments;
         
         consume(TokenType::EQUAL, "Expect '='.");
@@ -87,7 +86,6 @@ std::unique_ptr<Stmt> Parser::parseStatement() {
         return std::make_unique<AssignmentStmt>(std::move(assignments));
     }
     
-    // Otherwise it's an expression statement
     consume(TokenType::SEMICOLON, "Expect ';' after expression.");
     return std::make_unique<ExprStmt>(std::move(expr));
 }
@@ -144,7 +142,8 @@ std::unique_ptr<IfStmt> Parser::parseIfStmt() {
     std::unique_ptr<Stmt> elseBranch = nullptr;
 
 
-    if (match(TokenType::KEYWORD) && previous().lexeme == "else") {
+    if (check(TokenType::KEYWORD) && peek().lexeme == "else") {
+        advance();
 
         if (check(TokenType::KEYWORD) && peek().lexeme == "if") {
             elseBranch = parseIfStmt(); 
@@ -169,7 +168,7 @@ std::unique_ptr<Expr> Parser::parseExpression() {
 std::unique_ptr<Expr> Parser::parseLogicalOr() {
     auto left = parseLogicalAnd();
 
-    while (match(TokenType::OR)) { // ||
+    while (match(TokenType::OR)) { 
         std::string op = previous().lexeme;
         auto right = parseLogicalAnd();
         left = std::make_unique<BinaryExpr>(std::move(left), op, std::move(right));
@@ -211,7 +210,7 @@ std::unique_ptr<Expr> Parser::parseBitwiseOr(){
 std::unique_ptr<Expr> Parser::parseLogicalAnd() {
     auto left = parseBitwiseOr();
 
-    while (match(TokenType::AND)) { // &&
+    while (match(TokenType::AND)) { 
         std::string op = previous().lexeme;
         auto right = parseBitwiseOr();
         left = std::make_unique<BinaryExpr>(std::move(left), op, std::move(right));
@@ -407,9 +406,9 @@ std::vector<Param> Parser::parseParams(){
      do {
         bool isRef = false;
 
-        // Detect ref:
+        
         if (check(TokenType::IDENTIFIER) && peek().lexeme == "ref") {
-            advance(); // consume "ref"
+            advance(); 
             consume(TokenType::COLON, "Expected ':' after 'ref'");
             isRef = true;
         }

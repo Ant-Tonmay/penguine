@@ -127,15 +127,11 @@ Value ExprEvaluator::visit(const BinaryExpr* expr, Environment* env) {
         if (expr->op == "==") return l == r;
         if (expr->op == "!=") return l != r;
         if (expr->op == "%") return l % r;
-        
-        // Bitwise operations
         if (expr->op == "|") return l | r;
         if (expr->op == "&") return l & r;
         if (expr->op == "^") return l ^ r;
         if (expr->op == "<<") return l << r;
         if (expr->op == ">>") return l >> r;
-
-        // Logical operations (integer context)
         if (expr->op == "&&") return (l != 0) && (r != 0);
         if (expr->op == "||") return (l != 0) || (r != 0);
     }

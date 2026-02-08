@@ -4,7 +4,7 @@
 #include "interpreter/runtime_value.h"
 #include "interpreter/environment.h"
 
-class Interpreter; // Forward declaration
+class Interpreter; 
 
 class ExprEvaluator {
 public:

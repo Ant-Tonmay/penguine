@@ -18,7 +18,6 @@ void Interpreter::executeProgram(const Program* program) {
         userFunctions[func->name] = func.get();
     }
     
-    // Look for main
     if (userFunctions.count("main")) {
         callUserFunction(userFunctions["main"], {});
     } else {
@@ -39,11 +38,10 @@ void Interpreter::executeBlock(const Block* block, Environment* env) {
 }
 
 Value Interpreter::callFunctionByName(const std::string& name, const std::vector<Value>& args) {
-    // Check builtins first
+
     if (name == "print") {
         for (const auto& arg : args) {
             printValue(arg);
-            // space separator?
         }
         std::cout << std::endl;
         return std::monostate{};
@@ -109,19 +107,13 @@ Value Interpreter::callUserFunction(Function* fn, const std::vector<Value>& args
         throw std::runtime_error("Function " + fn->name + " expects " + std::to_string(fn->params.size()) + " arguments.");
     }
 
-    // Create new scope
-    Environment* fnEnv = new Environment(globals); // Static scoping? Or dynamic?
-    // Using `globals` as parent supports global access. Closures would need capture env.
-    // User example `functions.pg` has `func main()`.
-    
-    // Bind args
+    Environment* fnEnv = new Environment(globals);
     for (size_t i = 0; i < fn->params.size(); ++i) {
         if (fn->params[i].isRef) {
           
             
             fnEnv->define(fn->params[i].name, args[i]);
         } else {
-            // Pass by value
             fnEnv->define(fn->params[i].name, deepCopyIfNeeded(args[i]));
         }
     }
@@ -150,6 +142,5 @@ Value Interpreter::deepCopyIfNeeded(const Value& v) {
         }
         return copy;
     }
-    // Primitives Copy
     return v;
 }

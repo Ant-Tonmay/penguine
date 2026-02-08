@@ -17,8 +17,6 @@ void StmtExecutor::execute(const Stmt* stmt, Environment* env) {
         visit(returnStmt, env);
     } else if (auto block = dynamic_cast<const Block*>(stmt)) {
         visit(block, env);
-    } else if (auto block = dynamic_cast<const Block*>(stmt)) {
-        visit(block, env);
     } else if (auto exprStmt = dynamic_cast<const ExprStmt*>(stmt)) {
         visit(exprStmt, env);
     }

@@ -120,7 +120,6 @@ std::vector<Token> Lexer::tokenize() {
             case '%': addToken(TokenType::MOD_OP, "%"); break;  
             case '/': 
                 if (peek() == '/') {
-                    // Comment - consume until end of line
                     while (peek() != '\n' && !isAtEnd()) advance();
                 } else {
                     addToken(TokenType::SLASH, "/");
