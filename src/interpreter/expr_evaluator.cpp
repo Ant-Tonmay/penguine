@@ -21,8 +21,14 @@ Value ExprEvaluator::evaluate(const Expr* expr, Environment* env) {
         return visit(bin, env);
     } else if (auto un = dynamic_cast<const UnaryExpr*>(expr)) {
         return visit(un, env);
+    } else if (auto boolean = dynamic_cast<const BoolExpr*>(expr)) {
+        return visit(boolean);
     }
     return std::monostate{};
+}
+
+Value ExprEvaluator::visit(const BoolExpr* expr) {
+    return expr->value;
 }
 
 Value ExprEvaluator::visit(const NumberExpr* expr) {

@@ -341,6 +341,15 @@ std::unique_ptr<Expr> Parser::parsePrimary() {
     if (match(TokenType::STRING)) {
         return std::make_unique<StringExpr>(previous().lexeme);
     }
+    
+    if (match(TokenType::KEYWORD)) {
+        if (previous().lexeme == "true") {
+            return std::make_unique<BoolExpr>(true);
+        }
+        if (previous().lexeme == "false") {
+            return std::make_unique<BoolExpr>(false);
+        }
+    }
 
     if (match(TokenType::IDENTIFIER)) {
         return std::make_unique<VarExpr>(previous().lexeme);

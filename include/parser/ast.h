@@ -30,6 +30,11 @@ struct StringExpr : Expr {
     explicit StringExpr(std::string value) : value(value) {}
 };
 
+struct BoolExpr : Expr {
+    bool value;
+    explicit BoolExpr(bool value) : value(value) {}
+};
+
 struct VarExpr : Expr {
     std::string name;
     explicit VarExpr(std::string name) : name(name) {}
