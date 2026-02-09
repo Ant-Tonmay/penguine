@@ -75,9 +75,8 @@ std::unique_ptr<Stmt> Parser::parseStatement() {
         return stmt;
     }
     
-    if (check(TokenType::IDENTIFIER) && peek().lexeme == "for") {
-       
-        return parseForStmt();
+    if(check(TokenType::KEYWORD) && peek().lexeme == "while"){
+        return parseWhileStmt();
     }
     
     if (check(TokenType::KEYWORD) && peek().lexeme == "for") {
@@ -186,6 +185,18 @@ std::unique_ptr<ForStmt> Parser::parseForStmt() {
     auto body = parseBlock();
     
     return std::make_unique<ForStmt>(std::move(init), std::move(condition), std::move(increment), std::move(body));
+}
+
+std::unique_ptr<WhileStmt> Parser::parseWhileStmt(){
+    advance(); 
+    consume(TokenType::LPAREN, "Expect '(' after 'while'.");
+
+    auto condition = parseExpression();
+    consume(TokenType::RPAREN, "Expect ')' after loop condition.");
+
+    auto body = parseBlock();
+
+    return std::make_unique<WhileStmt>(std::move(condition), std::move(body));
 }
 std::unique_ptr<IfStmt> Parser::parseIfStmt() {
     advance();

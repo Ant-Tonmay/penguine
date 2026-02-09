@@ -88,6 +88,17 @@ struct ForStmt : Stmt {
           body(std::move(body)) {}
 };
 
+struct WhileStmt : Stmt {
+    std::unique_ptr<Expr> condition;
+    std::unique_ptr<Block> body;
+
+    WhileStmt(std::unique_ptr<Expr> condition,
+              std::unique_ptr<Block> body)
+        : condition(std::move(condition)),
+          body(std::move(body)){}
+
+
+};
 struct IfStmt : Stmt {
     std::unique_ptr<Expr> condition;
     std::unique_ptr<Block> thenBranch;
