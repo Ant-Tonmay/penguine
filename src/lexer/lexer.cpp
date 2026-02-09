@@ -99,7 +99,11 @@ void Lexer::identifier() {
         {"return", TokenType::KEYWORD},
         {"func", TokenType::KEYWORD},
         {"true", TokenType::KEYWORD},
-        {"false", TokenType::KEYWORD}
+        {"false", TokenType::KEYWORD},
+        {"break", TokenType::KEYWORD},
+        {"continue", TokenType::KEYWORD},
+        {"for",TokenType::KEYWORD}
+        
     };
 
     if (keywords.count(value)) {

@@ -172,3 +172,6 @@ struct ExprStmt : Stmt {
     explicit ExprStmt(std::unique_ptr<Expr> expression)
         : expression(std::move(expression)) {}
 };
+struct BreakStmt : Stmt {};
+
+struct ContinueStmt : Stmt {};

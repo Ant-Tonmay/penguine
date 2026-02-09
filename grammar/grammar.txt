@@ -8,6 +8,8 @@ statement_list → statement statement_list | ε
 
 statement   →
       return_stmt ";"
+    | break_stmt ";"
+    | continue_stmt ";"
     | assignment_stmt ";"
     | print_stmt ";"
     | if_stmt
@@ -16,7 +18,8 @@ statement   →
     
 return_stmt → "return" expression?
 print_stmt     → "print" "(" string ")"
-
+break_stmt     → "break"
+continue_stmt  → "continue"
 if_stmt        → "if" "(" expression ")" block  else_part
 else_part      → 
             "else" if_stmt 

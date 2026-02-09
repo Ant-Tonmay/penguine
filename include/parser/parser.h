@@ -31,6 +31,8 @@ private:
     std::unique_ptr<AssignmentStmt> parseAssignmentStmt();
     std::unique_ptr<ForStmt> parseForStmt();
     std::unique_ptr<IfStmt> parseIfStmt();
+    std::unique_ptr<BreakStmt> parseBreakStmt();
+    std::unique_ptr<ContinueStmt> parseContinueStmt();
 
     std::unique_ptr<Expr> expression(); 
     std::unique_ptr<Expr> parseRelational();

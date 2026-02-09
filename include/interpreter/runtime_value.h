@@ -34,6 +34,3 @@ inline void printValue(const Value& val) {
     }
 }
 
-struct ReturnException {
-    Value value;
-};

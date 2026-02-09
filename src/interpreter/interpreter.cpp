@@ -1,6 +1,7 @@
 #include "interpreter/interpreter.h"
 #include <iostream>
 #include <stdexcept>
+#include <interpreter/control_flow.h>
 
 Interpreter::Interpreter() {
     globals = new Environment();

@@ -1,5 +1,6 @@
 #include "interpreter/stmt_executor.h"
 #include "interpreter/interpreter.h"
+#include "interpreter/control_flow.h"
 #include <iostream>
 
 StmtExecutor::StmtExecutor(Interpreter* interpreter) : interpreter(interpreter) {}
@@ -13,7 +14,11 @@ void StmtExecutor::execute(const Stmt* stmt, Environment* env) {
         visit(ifStmt, env);
     } else if (auto forStmt = dynamic_cast<const ForStmt*>(stmt)) {
         visit(forStmt, env);
-    } else if (auto returnStmt = dynamic_cast<const ReturnStmt*>(stmt)) {
+    }else if(auto breakStmt = dynamic_cast<const BreakStmt*>(stmt)){
+        visit(breakStmt,env);
+    }else if(auto continueStmt = dynamic_cast<const ContinueStmt*>(stmt)){
+        visit(continueStmt,env);
+    }else if (auto returnStmt = dynamic_cast<const ReturnStmt*>(stmt)) {
         visit(returnStmt, env);
     } else if (auto block = dynamic_cast<const Block*>(stmt)) {
         visit(block, env);
@@ -132,7 +137,12 @@ void StmtExecutor::visit(const IfStmt* stmt, Environment* env) {
         }
     }
 }
-
+bool StmtExecutor::isTruthy(const Value& v) {
+    if (std::holds_alternative<bool>(v)) return std::get<bool>(v);
+    if (std::holds_alternative<int>(v)) return std::get<int>(v) != 0;
+    if (std::holds_alternative<std::monostate>(v)) return false;
+    return true; // default truthy
+}
 void StmtExecutor::visit(const ForStmt* stmt, Environment* env) {
     Environment loopEnv(env); // Loop scope
     
@@ -140,14 +150,21 @@ void StmtExecutor::visit(const ForStmt* stmt, Environment* env) {
     
     while (true) {
         if (stmt->condition) {
-            Value cond = interpreter->evaluateExpr(stmt->condition.get(), &loopEnv);
-            bool isTrue = false;
-            if (std::holds_alternative<bool>(cond)) isTrue = std::get<bool>(cond);
-            else if (std::holds_alternative<int>(cond)) isTrue = std::get<int>(cond) != 0;
-            if (!isTrue) break;
+            Value cond = interpreter->evaluateExpr(
+                stmt->condition.get(), &loopEnv
+            );
+            if (!isTruthy(cond))
+                break;
         }
-        
-        executeBlock(stmt->body.get(), &loopEnv);
+        try {
+            executeBlock(stmt->body.get(), &loopEnv);
+        }
+        catch (const ContinueSignal&) {
+            //Do Nothing Eat Five Star
+        }
+        catch (const BreakSignal&) {
+            break;
+        }
         
         if (stmt->increment) execute(stmt->increment.get(), &loopEnv);
     }
@@ -163,6 +180,13 @@ void StmtExecutor::visit(const ReturnStmt* stmt, Environment* env) {
 
 void StmtExecutor::visit(const Block* stmt, Environment* env) {
     executeBlock(stmt, env);
+}
+void StmtExecutor::visit(const BreakStmt*, Environment*) {
+    throw BreakSignal{};
+}
+
+void StmtExecutor::visit(const ContinueStmt*, Environment*) {
+    throw ContinueSignal{};
 }
 
 

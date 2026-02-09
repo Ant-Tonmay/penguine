@@ -23,4 +23,7 @@ private:
     void visit(const ReturnStmt* stmt, Environment* env);
     void visit(const Block* stmt, Environment* env); // Block is a stmt
     void visit(const ExprStmt* stmt, Environment* env);
+    void visit(const BreakStmt*, Environment*);
+    void visit(const ContinueStmt*, Environment*);
+    bool isTruthy(const Value& v);
 };

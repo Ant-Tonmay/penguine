@@ -47,9 +47,27 @@ std::unique_ptr<Block> Parser::parseBlock() {
     return block;
 }
 
-
+std::unique_ptr<BreakStmt> Parser::parseBreakStmt(){
+    consume(TokenType::SEMICOLON, "Expect ';' after break");
+    return std::make_unique<BreakStmt>();
+}
+std::unique_ptr<ContinueStmt> Parser::parseContinueStmt(){
+    consume(TokenType::SEMICOLON, "Expect ';' after continue");
+    return std::make_unique<ContinueStmt>();
+}
 
 std::unique_ptr<Stmt> Parser::parseStatement() {
+
+    if (check(TokenType::KEYWORD) && peek().lexeme == "break") {
+        advance();
+        return parseBreakStmt();
+    }
+
+    if (check(TokenType::KEYWORD) && peek().lexeme == "continue") {
+        advance();
+        return parseContinueStmt();
+    }
+
   
     if (check(TokenType::IDENTIFIER) && peek().lexeme == "print") {
         auto stmt = parsePrintStmt();
