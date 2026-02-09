@@ -28,7 +28,7 @@ private:
     
     std::unique_ptr<Stmt> parseStatement();
     std::unique_ptr<PrintStmt> parsePrintStmt();
-    std::unique_ptr<PrintStmt> parsePrintlnStmt();
+    std::unique_ptr<PrintlnStmt> parsePrintlnStmt();
     std::unique_ptr<AssignmentStmt> parseAssignmentStmt();
     std::unique_ptr<ForStmt> parseForStmt();
     std::unique_ptr<IfStmt> parseIfStmt();

@@ -17,6 +17,7 @@ private:
     Interpreter* interpreter;
 
     void visit(const PrintStmt* stmt, Environment* env);
+    void visit(const PrintlnStmt* stmt, Environment* env);
     void visit(const AssignmentStmt* stmt, Environment* env);
     void visit(const IfStmt* stmt, Environment* env);
     void visit(const ForStmt* stmt, Environment* env);

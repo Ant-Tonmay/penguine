@@ -151,12 +151,12 @@ std::unique_ptr<PrintStmt> Parser::parsePrintStmt() {
     return std::make_unique<PrintStmt>(std::move(expr));
 }
 
-std::unique_ptr<PrintStmt> Parser::parsePrintlnStmt(){
+std::unique_ptr<PrintlnStmt> Parser::parsePrintlnStmt(){
     advance(); 
     consume(TokenType::LPAREN, "Expect '(' after 'print'.");
     auto expr = parseExpression();
     consume(TokenType::RPAREN, "Expect ')' after print value.");
-    return std::make_unique<PrintStmt>(std::move(expr));
+    return std::make_unique<PrintlnStmt>(std::move(expr));
 }
 
 std::unique_ptr<AssignmentStmt> Parser::parseAssignmentStmt() {

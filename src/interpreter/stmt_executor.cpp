@@ -2,13 +2,17 @@
 #include "interpreter/interpreter.h"
 #include "interpreter/control_flow.h"
 #include <iostream>
+#include "interpreter/runtime_value.h"
 
 StmtExecutor::StmtExecutor(Interpreter* interpreter) : interpreter(interpreter) {}
 
 void StmtExecutor::execute(const Stmt* stmt, Environment* env) {
     if (auto print = dynamic_cast<const PrintStmt*>(stmt)) {
         visit(print, env);
-    } else if (auto assign = dynamic_cast<const AssignmentStmt*>(stmt)) {
+    } else if (auto println = dynamic_cast<const PrintlnStmt*>(stmt)) {
+        visit(println, env);
+    } 
+    else if (auto assign = dynamic_cast<const AssignmentStmt*>(stmt)) {
         visit(assign, env);
     } else if (auto ifStmt = dynamic_cast<const IfStmt*>(stmt)) {
         visit(ifStmt, env);
@@ -42,6 +46,12 @@ void StmtExecutor::executeBlock(const Block* block, Environment* env) {
 }
 
 void StmtExecutor::visit(const PrintStmt* stmt, Environment* env) {
+    Value val = interpreter->evaluateExpr(stmt->expression.get(), env);
+    printValue(val);
+    // No newline for print()
+}
+
+void StmtExecutor::visit(const PrintlnStmt* stmt, Environment* env) {
     Value val = interpreter->evaluateExpr(stmt->expression.get(), env);
     printValue(val);
     std::cout << std::endl;

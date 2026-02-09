@@ -2,6 +2,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <interpreter/control_flow.h>
+#include "interpreter/runtime_value.h"
 
 Interpreter::Interpreter() {
     globals = new Environment();
