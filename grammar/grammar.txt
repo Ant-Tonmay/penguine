@@ -12,6 +12,7 @@ statement   →
     | continue_stmt ";"
     | assignment_stmt ";"
     | print_stmt ";"
+    | println_stmt ";"
     | if_stmt
     | for_stmt
     | while_stmt
@@ -19,6 +20,7 @@ statement   →
     
 return_stmt → "return" expression?
 print_stmt     → "print" "(" string ")"
+println_stmt   → "println "(" string ")"
 break_stmt     → "break"
 continue_stmt  → "continue"
 if_stmt        → "if" "(" expression ")" block  else_part

@@ -53,6 +53,12 @@ struct PrintStmt : Stmt {
         : expression(std::move(expression)) {}
 };
 
+struct PrintlnStmt : Stmt {
+    std::unique_ptr<Expr> expression;
+    explicit PrintlnStmt(std::unique_ptr<Expr> expression) 
+        : expression(std::move(expression)) {}
+};
+
 struct Assignment {
     std::unique_ptr<Expr> target;
     TokenType op;      

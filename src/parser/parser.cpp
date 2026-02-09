@@ -74,6 +74,12 @@ std::unique_ptr<Stmt> Parser::parseStatement() {
         consume(TokenType::SEMICOLON, "Expect ';' after print statement.");
         return stmt;
     }
+
+    if (check(TokenType::IDENTIFIER) && peek().lexeme == "println") {
+        auto stmt = parsePrintlnStmt();
+        consume(TokenType::SEMICOLON, "Expect ';' after print statement.");
+        return stmt;
+    }
     
     if(check(TokenType::KEYWORD) && peek().lexeme == "while"){
         return parseWhileStmt();
@@ -138,6 +144,14 @@ std::unique_ptr<Stmt> Parser::parseStatement() {
 
 std::unique_ptr<PrintStmt> Parser::parsePrintStmt() {
     
+    advance(); 
+    consume(TokenType::LPAREN, "Expect '(' after 'print'.");
+    auto expr = parseExpression();
+    consume(TokenType::RPAREN, "Expect ')' after print value.");
+    return std::make_unique<PrintStmt>(std::move(expr));
+}
+
+std::unique_ptr<PrintStmt> Parser::parsePrintlnStmt(){
     advance(); 
     consume(TokenType::LPAREN, "Expect '(' after 'print'.");
     auto expr = parseExpression();
