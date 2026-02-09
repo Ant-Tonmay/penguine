@@ -55,7 +55,16 @@ Value Interpreter::callFunctionByName(const std::string& name, const std::vector
         if (size < 0) throw std::runtime_error("fixed() size cannot be negative.");
         
         Value initVal = std::monostate{};
-        if (args.size() == 2) initVal = args[1];
+        if (args.size() == 2) {
+            initVal = args[1];
+            // Auto-unwrap if it's an array of size 1
+            if (std::holds_alternative<ArrayObject*>(initVal)) {
+                ArrayObject* initArr = std::get<ArrayObject*>(initVal);
+                if (initArr->length == 1) {
+                    initVal = initArr->data[0];
+                }
+            }
+        }
         
         ArrayObject* arr = new ArrayObject();
         arr->isFixed = true;

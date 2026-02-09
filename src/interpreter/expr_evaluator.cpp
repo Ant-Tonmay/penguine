@@ -55,6 +55,11 @@ Value ExprEvaluator::visit(const ArrayExpr* expr, Environment* env) {
     
     size_t n = elements.size();
     
+    // Auto-unwrap single-element arrays if the element is an array
+    if (n == 1 && std::holds_alternative<ArrayObject*>(elements[0])) {
+        return elements[0];
+    }
+    
     ArrayObject* obj = new ArrayObject;
     obj->length = n;
     obj->capacity = n;

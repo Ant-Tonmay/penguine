@@ -26,7 +26,36 @@
         multidim2 = [fixed(n,[fixed(n)])]; // 2d array of n*n
         multidim3 = [fixed(n,[fixed(n,[fixed(n)])])]; // 3d array n*n*n
         multidim4 = []; // can add anything an array , and array of array truly dynamic
-        
+        ele = 0;
+        print("multi dimension1");
+        for(i=0;i<n; i+=1){
+            for(j = 0 ; j <n; j+=1){
+                multidim2[i][j] = ele;
+                ele+=1;
+            }
+        }
+        for(i=0;i<n;i=i+1){
+            for(j=0;j<n;j=j+1){
+                print(multidim2[i][j]);
+            }
+        }
+        print("multi dimension2");
+        ele = 0;
+        for(i=0;i<n;i=i+1){
+            for(j=0;j<n;j=j+1){
+                for(k=0;k<n;k=k+1){
+                    multidim3[i][j][k] = ele;
+                    ele+=1;
+                }
+            }
+        }
+        for(i=0;i<n;i=i+1){
+            for(j=0;j<n;j=j+1){
+                for(k=0;k<n;k=k+1){
+                    print(multidim3[i][j][k]);
+                }
+            }
+        }
         
     }
 }
