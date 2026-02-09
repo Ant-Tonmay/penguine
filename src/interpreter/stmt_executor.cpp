@@ -14,7 +14,9 @@ void StmtExecutor::execute(const Stmt* stmt, Environment* env) {
         visit(ifStmt, env);
     } else if (auto forStmt = dynamic_cast<const ForStmt*>(stmt)) {
         visit(forStmt, env);
-    }else if(auto breakStmt = dynamic_cast<const BreakStmt*>(stmt)){
+    } else if(auto whileStmt = dynamic_cast<const WhileStmt*>(stmt)){
+        visit(whileStmt,env);
+    } else if(auto breakStmt = dynamic_cast<const BreakStmt*>(stmt)){
         visit(breakStmt,env);
     }else if(auto continueStmt = dynamic_cast<const ContinueStmt*>(stmt)){
         visit(continueStmt,env);
@@ -168,6 +170,28 @@ void StmtExecutor::visit(const ForStmt* stmt, Environment* env) {
         
         if (stmt->increment) execute(stmt->increment.get(), &loopEnv);
     }
+}
+
+void StmtExecutor::visit(const WhileStmt* stmt , Environment* env){
+
+    Environment loopEnv(env); // Loop scope
+    while (true) {
+        Value cond = interpreter->evaluateExpr(stmt->condition.get(), &loopEnv);
+        if (!isTruthy(cond))
+            break;
+        
+        try {
+            executeBlock(stmt->body.get(), &loopEnv);
+        }
+        catch (const ContinueSignal&) {
+            //Do Nothing Eat Five Star
+        }
+        catch (const BreakSignal&) {
+            break;
+        }
+        
+    }
+
 }
 
 void StmtExecutor::visit(const ReturnStmt* stmt, Environment* env) {

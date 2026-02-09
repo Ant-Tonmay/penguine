@@ -78,6 +78,10 @@ add_executable(penguin_parser_function_test src/test_parser_functions.cpp)
 target_link_libraries(penguin_parser_function_test PRIVATE penguin_core)
 add_test(NAME ParserFunctionTest COMMAND penguin_parser_function_test)
 
+add_executable(penguin_parser_loops_test src/test_parser_loops.cpp)
+target_link_libraries(penguin_parser_loops_test PRIVATE penguin_core)
+add_test(NAME ParserLoopsTest COMMAND penguin_parser_loops_test)
+
 # -----------------------------
 # Debug flags
 # -----------------------------
