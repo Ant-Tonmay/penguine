@@ -45,15 +45,59 @@ void StmtExecutor::executeBlock(const Block* block, Environment* env) {
     }
 }
 
+
+std::string formatString(const std::string& str, Environment* env) {
+    std::string result;
+    result.reserve(str.length());
+    
+    for (size_t i = 0; i < str.length(); ++i) {
+        if (str[i] == '{') {
+            size_t j = i + 1;
+            while (j < str.length() && str[j] != '}') {
+                j++;
+            }
+            
+            if (j < str.length()) { 
+                std::string varName = str.substr(i + 1, j - i - 1);
+                bool isValid = !varName.empty();
+                for (char c : varName) {
+                    if (!isalnum(c) && c != '_') {
+                        isValid = false;
+                        break;
+                    }
+                }
+
+                if (isValid) {
+                    Value val = env->get(varName);
+                    result += valueToString(val);
+                    i = j; 
+                    continue;
+                }
+            }
+        }
+        result += str[i];
+    }
+    return result;
+}
+
 void StmtExecutor::visit(const PrintStmt* stmt, Environment* env) {
     Value val = interpreter->evaluateExpr(stmt->expression.get(), env);
-    printValue(val);
-    // No newline for print()
+    if (std::holds_alternative<std::string>(val)) {
+        std::string formatted = formatString(std::get<std::string>(val), env);
+        std::cout << formatted;
+    } else {
+        printValue(val);
+    }
 }
 
 void StmtExecutor::visit(const PrintlnStmt* stmt, Environment* env) {
     Value val = interpreter->evaluateExpr(stmt->expression.get(), env);
-    printValue(val);
+    if (std::holds_alternative<std::string>(val)) {
+        std::string formatted = formatString(std::get<std::string>(val), env);
+        std::cout << formatted;
+    } else {
+        printValue(val);
+    }
     std::cout << std::endl;
 }
 
