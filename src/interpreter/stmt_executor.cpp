@@ -3,6 +3,8 @@
 #include "interpreter/control_flow.h"
 #include <iostream>
 #include "interpreter/runtime_value.h"
+#include "lexer/lexer.h"
+#include "parser/parser.h"
 
 StmtExecutor::StmtExecutor(Interpreter* interpreter) : interpreter(interpreter) {}
 
@@ -46,7 +48,8 @@ void StmtExecutor::executeBlock(const Block* block, Environment* env) {
 }
 
 
-std::string formatString(const std::string& str, Environment* env) {
+
+std::string formatString(const std::string& str, Environment* env, Interpreter* interpreter) {
     std::string result;
     result.reserve(str.length());
     
@@ -58,21 +61,23 @@ std::string formatString(const std::string& str, Environment* env) {
             }
             
             if (j < str.length()) { 
-                std::string varName = str.substr(i + 1, j - i - 1);
-                bool isValid = !varName.empty();
-                for (char c : varName) {
-                    if (!isalnum(c) && c != '_') {
-                        isValid = false;
-                        break;
-                    }
+                std::string content = str.substr(i + 1, j - i - 1);
+                
+                try {
+                    Lexer lexer(content);
+                    std::vector<Token> tokens = lexer.tokenize();
+                    Parser parser(tokens);
+                    auto expr = parser.parseExpression(); // We assume it's an expression
+                    Value val = interpreter->evaluateExpr(expr.get(), env);
+                    result += valueToString(val);
+                } catch (const std::exception& e) {
+                     // If parsing or evaluation fails, we can either throw or print the original text
+                     // For now, let's treat it as a runtime error if user intended interpolation
+                     throw std::runtime_error("Error interpolating string '" + content + "': " + e.what());
                 }
 
-                if (isValid) {
-                    Value val = env->get(varName);
-                    result += valueToString(val);
-                    i = j; 
-                    continue;
-                }
+                i = j; 
+                continue;
             }
         }
         result += str[i];
@@ -83,7 +88,7 @@ std::string formatString(const std::string& str, Environment* env) {
 void StmtExecutor::visit(const PrintStmt* stmt, Environment* env) {
     Value val = interpreter->evaluateExpr(stmt->expression.get(), env);
     if (std::holds_alternative<std::string>(val)) {
-        std::string formatted = formatString(std::get<std::string>(val), env);
+        std::string formatted = formatString(std::get<std::string>(val), env, interpreter);
         std::cout << formatted;
     } else {
         printValue(val);
@@ -93,7 +98,7 @@ void StmtExecutor::visit(const PrintStmt* stmt, Environment* env) {
 void StmtExecutor::visit(const PrintlnStmt* stmt, Environment* env) {
     Value val = interpreter->evaluateExpr(stmt->expression.get(), env);
     if (std::holds_alternative<std::string>(val)) {
-        std::string formatted = formatString(std::get<std::string>(val), env);
+        std::string formatted = formatString(std::get<std::string>(val), env, interpreter);
         std::cout << formatted;
     } else {
         printValue(val);
