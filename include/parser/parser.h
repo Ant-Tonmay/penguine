@@ -36,6 +36,17 @@ private:
     std::unique_ptr<ContinueStmt> parseContinueStmt();
     std::unique_ptr<WhileStmt> parseWhileStmt();
 
+    std::unique_ptr<ClassStmt> parseClassStmt();
+    std::unique_ptr<ClassSection> parseSection();
+    AccessModifier parseAccessModifier();
+    std::unique_ptr<ClassMember> parseClassMember();
+
+    std::unique_ptr<FieldDecl> parseFieldDecl();
+    std::unique_ptr<MethodDecl> parseMethodDecl();
+    std::unique_ptr<MethodDef> parseMethodDef();
+
+    std::unique_ptr<MethodDecl> parseMethodDeclAfterName(std::string name);
+
     std::unique_ptr<Expr> expression(); 
     std::unique_ptr<Expr> parseRelational();
     std::unique_ptr<Expr> parseAdditive();

@@ -9,6 +9,7 @@ statement_list → statement statement_list | ε
 statement   →
       return_stmt ";"
     | break_stmt ";"
+    | class_stmt
     | continue_stmt ";"
     | assignment_stmt ";"
     | print_stmt ";"
@@ -17,7 +18,33 @@ statement   →
     | for_stmt
     | while_stmt
     | block
-    
+
+class_stmt
+    → "class" IDENTIFIER "{" section* "}"
+
+section
+    → access_modifier "{" class_member* "}"
+
+access_modifier
+    → "private"
+    | "public"
+    | "protected"
+
+class_member
+    → declaration
+    | method_decl
+    | method_def
+
+declaration
+    → "dec" ":" IDENTIFIER ";"
+
+method_decl
+    → "dec" ":" IDENTIFIER "(" params? ")" ";"
+
+method_def
+    → "func" IDENTIFIER "(" params? ")" block
+
+
 return_stmt → "return" expression?
 print_stmt     → "print" "(" string ")"
 println_stmt   → "println "(" string ")"
@@ -70,6 +97,17 @@ additive        → multiplicative ( ("+" | "-") multiplicative )*
 
 multiplicative  → unary ( ("*" | "/" | "%") unary )*
 
-unary           → ("!" | "-") unary | primary
+unary           → ("!" | "-") unary | postfix
 
-primary         → NUMBER | STRING | IDENTIFIER | "(" expression ")"
+postfix         → primary postfix_op*
+
+postfix_op      →
+      "(" arguments? ")"
+    | "[" expression "]"
+    | "." IDENTIFIER
+
+primary         →
+      NUMBER
+    | STRING
+    | IDENTIFIER
+    | "(" expression ")"

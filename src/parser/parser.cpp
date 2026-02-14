@@ -11,7 +11,11 @@ std::unique_ptr<Program> Parser::parse() {
     consume(TokenType::LBRACE, "Expect '{' at start of program.");
     
     while (!check(TokenType::RBRACE) && !isAtEnd()) {
-        program->functions.push_back(parseFunction());
+        if (check(TokenType::KEYWORD) && peek().lexeme == "class") {
+            program->classes.push_back(parseClassStmt());
+        } else {
+            program->functions.push_back(parseFunction());
+        }
     }
     
     consume(TokenType::RBRACE, "Expect '}' at end of program.");
@@ -95,6 +99,9 @@ std::unique_ptr<Stmt> Parser::parseStatement() {
 
     if (check(TokenType::KEYWORD) && peek().lexeme == "if") {
         return parseIfStmt();
+    }
+    if (check(TokenType::KEYWORD) && peek().lexeme == "class") {
+        return parseClassStmt();
     }
     if (match(TokenType::KEYWORD) && previous().lexeme == "return") {
         std::unique_ptr<Expr> value = nullptr;
@@ -333,14 +340,6 @@ std::unique_ptr<Expr> Parser::parseShift() {
 
     return left;
 }
-std::unique_ptr<Expr> Parser::parseUnary() {
-    if (match(TokenType::NOT) || match(TokenType::MINUS)) {
-        std::string op = previous().lexeme;
-        auto right = parseUnary();
-        return std::make_unique<UnaryExpr>(op, std::move(right));
-    }
-    return parsePostfix();
-}
 
 std::unique_ptr<Expr> Parser::parseAdditive() {
     
@@ -366,6 +365,16 @@ std::unique_ptr<Expr> Parser::parseMultiplicative() {
 
     return left;
 }
+
+std::unique_ptr<Expr> Parser::parseUnary() {
+    if (match(TokenType::NOT) || match(TokenType::MINUS)) {
+        std::string op = previous().lexeme;
+        auto right = parseUnary();
+        return std::make_unique<UnaryExpr>(op, std::move(right));
+    }
+    return parsePostfix();
+}
+
 
 std::unique_ptr<Expr> Parser::parsePostfix() {
     auto expr = parsePrimary();
@@ -443,6 +452,139 @@ std::unique_ptr<Expr> Parser::parsePrimary() {
 
     throw std::runtime_error("Expect expression.");
 }
+
+std::unique_ptr<ClassStmt> Parser::parseClassStmt() {
+    consume(TokenType::KEYWORD, "Expect 'class' keyword.");
+    Token name = consume(TokenType::IDENTIFIER, "Expect class name.");
+
+    consume(TokenType::LBRACE, "Expect '{' after class name.");
+
+    std::vector<std::unique_ptr<ClassSection>> sections;
+
+    while (!check(TokenType::RBRACE) && !isAtEnd()) {
+        if (check(TokenType::KEYWORD) && (peek().lexeme == "public" || peek().lexeme == "private" || peek().lexeme == "protected")) {
+            sections.push_back(parseSection());
+        } else {
+            auto member = parseClassMember();
+            std::vector<std::unique_ptr<ClassMember>> members;
+            members.push_back(std::move(member));
+            // Default to private for direct members? Or public? Example doesn't specify, assuming private for safety.
+            sections.push_back(std::make_unique<ClassSection>(AccessModifier::PRIVATE, std::move(members)));
+        }
+    }
+
+    consume(TokenType::RBRACE, "Expect '}' after class body.");
+
+    return std::make_unique<ClassStmt>(name.lexeme, std::move(sections));
+}
+
+std::unique_ptr<ClassSection> Parser::parseSection() {
+    AccessModifier modifier = parseAccessModifier();
+
+    consume(TokenType::LBRACE, "Expect '{' after access modifier.");
+
+    std::vector<std::unique_ptr<ClassMember>> members;
+
+    while (!check(TokenType::RBRACE) && !isAtEnd()) {
+        members.push_back(parseClassMember());
+    }
+
+    consume(TokenType::RBRACE, "Expect '}' after section.");
+
+    return std::make_unique<ClassSection>(modifier, std::move(members));
+}
+AccessModifier Parser::parseAccessModifier() {
+    if (match(TokenType::KEYWORD)) {
+        std::string word = previous().lexeme;
+
+        if (word == "public") return AccessModifier::PUBLIC;
+        if (word == "private") return AccessModifier::PRIVATE;
+        if (word == "protected") return AccessModifier::PROTECTED;
+    }
+
+    throw std::runtime_error("Expected access modifier (public/private/protected)");
+}
+std::unique_ptr<ClassMember> Parser::parseClassMember() {
+
+    if (check(TokenType::KEYWORD)) {
+        std::string lexeme = peek().lexeme;
+        
+        if (lexeme == "dec") {
+            advance(); // Consume 'dec'
+            consume(TokenType::COLON, "Expect ':' after dec.");
+
+            Token name = consume(TokenType::IDENTIFIER, "Expect identifier.");
+
+            // method declaration?
+            if (match(TokenType::LPAREN)) {
+                return parseMethodDeclAfterName(name.lexeme);
+            }
+
+            consume(TokenType::SEMICOLON, "Expect ';' after field.");
+            return std::make_unique<FieldDecl>(name.lexeme);
+        }
+        
+        if (lexeme == "func") {
+            advance(); // Consume 'func'
+            return parseMethodDef();
+        }
+    }
+
+    throw std::runtime_error("Invalid class member. Found: " + peek().lexeme);
+}
+std::unique_ptr<MethodDecl> Parser::parseMethodDeclAfterName(std::string name) {
+
+    std::vector<Param> params;
+
+    if (!check(TokenType::RPAREN)) {
+        do {
+            bool isRef = false;
+
+            if (match(TokenType::KEYWORD) && previous().lexeme == "ref") {
+                consume(TokenType::COLON, "Expect ':' after ref.");
+                isRef = true;
+            }
+
+            Token paramName = consume(TokenType::IDENTIFIER, "Expect parameter name.");
+            params.emplace_back(paramName.lexeme, isRef);
+
+        } while (match(TokenType::COMMA));
+    }
+
+    consume(TokenType::RPAREN, "Expect ')' after parameters.");
+    consume(TokenType::SEMICOLON, "Expect ';' after method declaration.");
+
+    return std::make_unique<MethodDecl>(name, std::move(params));
+}
+std::unique_ptr<MethodDef> Parser::parseMethodDef() {
+    Token name = consume(TokenType::IDENTIFIER, "Expect method name.");
+
+    consume(TokenType::LPAREN, "Expect '(' after method name.");
+
+    std::vector<Param> params;
+
+    if (!check(TokenType::RPAREN)) {
+        do {
+            bool isRef = false;
+
+            if (match(TokenType::KEYWORD) && previous().lexeme == "ref") {
+                consume(TokenType::COLON, "Expect ':' after ref.");
+                isRef = true;
+            }
+
+            Token paramName = consume(TokenType::IDENTIFIER, "Expect parameter name.");
+            params.emplace_back(paramName.lexeme, isRef);
+
+        } while (match(TokenType::COMMA));
+    }
+
+    consume(TokenType::RPAREN, "Expect ')' after params.");
+
+    auto body = parseBlock();
+
+    return std::make_unique<MethodDef>(name.lexeme, std::move(params), std::move(body));
+}
+
 
 
 

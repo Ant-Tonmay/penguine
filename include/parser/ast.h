@@ -10,6 +10,13 @@ struct ASTNode {
     virtual ~ASTNode() = default;
 };
 
+enum class AccessModifier {
+    PUBLIC,
+    PRIVATE,
+    PROTECTED
+};
+
+
 struct Expr : ASTNode {};
 
 struct BinaryExpr : Expr {
@@ -118,6 +125,9 @@ struct IfStmt : Stmt {
           elseBranch(std::move(elseBranch)) {}
 };
 
+
+
+
 struct Param {
     std::string name;
     bool isRef;
@@ -135,9 +145,7 @@ struct Function : ASTNode {
         : name(std::move(name)), params(std::move(params)), body(std::move(body)) {}
 };
 
-struct Program : ASTNode {
-    std::vector<std::unique_ptr<Function>> functions;
-};
+
 struct UnaryExpr : Expr {
     std::string op;
     std::unique_ptr<Expr> right;
@@ -192,3 +200,60 @@ struct ExprStmt : Stmt {
 struct BreakStmt : Stmt {};
 
 struct ContinueStmt : Stmt {};
+
+
+struct ClassMember : ASTNode {
+    virtual ~ClassMember() = default;
+};
+
+struct FieldDecl : ClassMember {
+    std::string name;
+
+    explicit FieldDecl(std::string name)
+        : name(std::move(name)) {}
+};
+
+struct MethodDecl : ClassMember {
+    std::string name;
+    std::vector<Param> params;
+
+    MethodDecl(std::string name, std::vector<Param> params)
+        : name(std::move(name)), params(std::move(params)) {}
+};
+
+struct MethodDef : ClassMember {
+    std::string name;
+    std::vector<Param> params;
+    std::unique_ptr<Block> body;
+
+    MethodDef(std::string name,
+              std::vector<Param> params,
+              std::unique_ptr<Block> body)
+        : name(std::move(name)),
+          params(std::move(params)),
+          body(std::move(body)) {}
+};
+
+struct ClassSection : ASTNode {
+    AccessModifier modifier;
+    std::vector<std::unique_ptr<ClassMember>> members;
+
+    ClassSection(AccessModifier modifier,
+                 std::vector<std::unique_ptr<ClassMember>> members)
+        : modifier(modifier),
+          members(std::move(members)) {}
+};
+struct ClassStmt : Stmt {
+    std::string name;
+    std::vector<std::unique_ptr<ClassSection>> sections;
+
+    ClassStmt(std::string name,
+              std::vector<std::unique_ptr<ClassSection>> sections)
+        : name(std::move(name)),
+          sections(std::move(sections)) {}
+};
+
+struct Program : ASTNode {
+    std::vector<std::unique_ptr<Function>> functions;
+    std::vector<std::unique_ptr<ClassStmt>> classes;
+};

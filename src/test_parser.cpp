@@ -178,7 +178,7 @@ void testForStmt() {
         Token(TokenType::RPAREN, ")"),
         Token(TokenType::LBRACE, "{"),
         
-        Token(TokenType::IDENTIFIER, "for"), // Parsing as identifier currently
+        Token(TokenType::KEYWORD, "for"),
         Token(TokenType::LPAREN, "("),
         
         // Init: i = 0

@@ -5,8 +5,12 @@
 #include <stdexcept>
 #include <iostream>
 #include "parser/ast.h"
+#include <unordered_map>
+
 struct FunctionObject;
 struct ArrayObject; 
+struct ObjectObject;
+
 using Value = std::variant<
     int,      
     bool,
@@ -18,8 +22,14 @@ using Value = std::variant<
     ArrayObject*,
     std::monostate,
     FunctionObject*,
+    ObjectObject*,
     std::string 
 >;
+
+struct ObjectObject {
+    std::unordered_map<std::string, Value> fields;
+};
+
 struct ArrayObject {
     bool isFixed;
     size_t length;

@@ -102,7 +102,13 @@ void Lexer::identifier() {
         {"false", TokenType::KEYWORD},
         {"break", TokenType::KEYWORD},
         {"continue", TokenType::KEYWORD},
-        {"for",TokenType::KEYWORD}
+        {"for",TokenType::KEYWORD},
+        {"class",TokenType::KEYWORD},
+        {"dec",TokenType::KEYWORD},
+        {"private",TokenType::KEYWORD},
+        {"public",TokenType::KEYWORD},
+        {"protected",TokenType::KEYWORD},
+
         
     };
 
