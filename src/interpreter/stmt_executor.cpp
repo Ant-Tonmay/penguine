@@ -13,7 +13,11 @@ void StmtExecutor::execute(const Stmt* stmt, Environment* env) {
         visit(print, env);
     } else if (auto println = dynamic_cast<const PrintlnStmt*>(stmt)) {
         visit(println, env);
-    } 
+    }
+    else if (auto cls = dynamic_cast<const ClassStmt*>(stmt)) {
+        visit(cls , env);
+    }
+
     else if (auto assign = dynamic_cast<const AssignmentStmt*>(stmt)) {
         visit(assign, env);
     } else if (auto ifStmt = dynamic_cast<const IfStmt*>(stmt)) {
@@ -157,6 +161,26 @@ void StmtExecutor::visit(const AssignmentStmt* stmt, Environment* env) {
                 }
             }
         } 
+        else if (auto mem = dynamic_cast<const MemberExpr*>(assignment.target.get())) {
+            Value objVal = interpreter->evaluateExpr(mem->object.get(), env);
+            Value finalVal = val;
+            
+            if (std::holds_alternative<InstanceObject*>(objVal)) {
+                 InstanceObject* obj = std::get<InstanceObject*>(objVal);
+                 
+                 if (obj->fieldValues.count(mem->name)) {
+                      if (assignment.op != TokenType::EQUAL) {
+                            Value currentVal = obj->fieldValues[mem->name];
+                            finalVal = performCompoundAssignment(assignment.op, currentVal, val);
+                      }
+                      obj->fieldValues[mem->name] = finalVal;
+                 } else {
+                      throw std::runtime_error("Undefined property '" + mem->name + "'.");
+                 }
+            } else {
+                 throw std::runtime_error("Only instances have fields.");
+            }
+        }
         else if (auto idx = dynamic_cast<const IndexExpr*>(assignment.target.get())) {
           
             Value arrVal = interpreter->evaluateExpr(idx->array.get(), env);
@@ -273,3 +297,25 @@ void StmtExecutor::visit(const ContinueStmt*, Environment*) {
 }
 
 
+void StmtExecutor::visit(const ClassStmt* stmt ,Environment* env) {
+
+    auto klass = new ClassObject();
+    klass->name = stmt->name;
+
+    for (auto& section : stmt->sections) {
+
+        for (auto& member : section->members) {
+
+            if (auto field = dynamic_cast<FieldDecl*>(member.get())) {
+                klass->fields[field->name] = section->modifier;
+            }
+
+            else if (auto method = dynamic_cast<MethodDef*>(member.get())) {
+                klass->methods[method->name] = method;
+                klass->methodAccess[method->name] = section->modifier;
+            }
+        }
+    }
+
+    interpreter->classes[klass->name] = klass;
+}

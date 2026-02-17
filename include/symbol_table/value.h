@@ -10,6 +10,10 @@
 struct FunctionObject;
 struct ArrayObject; 
 struct ObjectObject;
+struct ClassObject;
+struct InstanceObject;
+struct BoundMethod;
+
 
 using Value = std::variant<
     int,      
@@ -23,6 +27,9 @@ using Value = std::variant<
     std::monostate,
     FunctionObject*,
     ObjectObject*,
+    ClassObject*,
+    InstanceObject*,
+    BoundMethod*,
     std::string 
 >;
 
@@ -44,4 +51,8 @@ struct ArrayObject {
 };
 struct FunctionObject {
     Function* astNode; 
+};
+struct BoundMethod {
+    InstanceObject* instance;
+    MethodDef* method;
 };

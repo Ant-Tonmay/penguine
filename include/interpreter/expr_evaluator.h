@@ -25,4 +25,6 @@ private:
     Value visit(const CallExpr* expr, Environment* env);
     Value visit(const BinaryExpr* expr, Environment* env);
     Value visit(const UnaryExpr* expr, Environment* env);
+    Value visit(const MemberExpr* expr, Environment* env);
+
 };

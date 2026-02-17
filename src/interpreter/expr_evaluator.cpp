@@ -23,6 +23,8 @@ Value ExprEvaluator::evaluate(const Expr* expr, Environment* env) {
         return visit(un, env);
     } else if (auto boolean = dynamic_cast<const BoolExpr*>(expr)) {
         return visit(boolean);
+    } else if (auto mem = dynamic_cast<const MemberExpr*>(expr)) {
+        return visit(mem, env);
     }
     return std::monostate{};
 }
@@ -43,7 +45,29 @@ Value ExprEvaluator::visit(const StringExpr* expr) {
 }
 
 Value ExprEvaluator::visit(const VarExpr* expr, Environment* env) {
-    return env->get(expr->name);
+    try {
+        return env->get(expr->name);
+    } catch (const std::runtime_error&) {
+       
+        try {
+            Value thisVal = env->get("this");
+            if (std::holds_alternative<InstanceObject*>(thisVal)) {
+                InstanceObject* obj = std::get<InstanceObject*>(thisVal);
+                if (obj->fieldValues.count(expr->name)) {
+                    return obj->fieldValues[expr->name];
+                }
+                if (obj->klass->methods.count(expr->name)) {
+                     BoundMethod* bm = new BoundMethod();
+                     bm->instance = obj;
+                     bm->method = obj->klass->methods[expr->name];
+                     return bm;
+                }
+            }
+        } catch (...) {
+            // 'this' not in scope or error
+        }
+        throw; // Re-throw original error if not found in 'this'
+    }
 }
 
 Value ExprEvaluator::visit(const ArrayExpr* expr, Environment* env) {
@@ -91,27 +115,42 @@ Value ExprEvaluator::visit(const IndexExpr* expr, Environment* env) {
 }
 
 Value ExprEvaluator::visit(const CallExpr* expr, Environment* env) {
-    
-    std::string name;
-    std::vector<Value> args;
 
-    if (auto member = dynamic_cast<const MemberExpr*>(expr->callee.get())) {
-        name = member->name;
-      
-        args.push_back(evaluate(member->object.get(), env));
-    } else if (auto var = dynamic_cast<const VarExpr*>(expr->callee.get())) {
-        name = var->name;
-    } else {
+    if (auto var = dynamic_cast<const VarExpr*>(expr->callee.get())) {
+        if (interpreter->classes.count(var->name)) {
+            std::vector<Value> args;
+            for(auto& arg : expr->arguments) args.push_back(evaluate(arg.get(), env));
+            return interpreter->instantiateClass(var->name, args);
+        }
+    }
+
+    Value calleeVal = std::monostate{};
+    bool evaluated = false;
+    try {
+        calleeVal = evaluate(expr->callee.get(), env);
+        evaluated = true;
+    } catch (const std::runtime_error& e) {
        
-        return std::monostate{};
     }
 
-   
-    for(auto& arg : expr->arguments) {
-        args.push_back(evaluate(arg.get(), env));
+    if (evaluated) {
+        std::vector<Value> args;
+        for(auto& arg : expr->arguments) args.push_back(evaluate(arg.get(), env));
+
+        if (std::holds_alternative<BoundMethod*>(calleeVal)) {
+            BoundMethod* bm = std::get<BoundMethod*>(calleeVal);
+            return interpreter->callMethod(bm->instance, bm->method->name, args);
+        }
+        
     }
-    
-    return interpreter->callFunctionByName(name, args);
+
+    if (auto var = dynamic_cast<const VarExpr*>(expr->callee.get())) {
+         std::vector<Value> args;
+         for(auto& arg : expr->arguments) args.push_back(evaluate(arg.get(), env));
+         return interpreter->callFunctionByName(var->name, args);
+    }
+
+    throw std::runtime_error("Expression is not callable.");
 }
 
 Value ExprEvaluator::visit(const BinaryExpr* expr, Environment* env) {
@@ -124,7 +163,7 @@ Value ExprEvaluator::visit(const BinaryExpr* expr, Environment* env) {
         if (expr->op == "+") return l + r;
         if (expr->op == "-") return l - r;
         if (expr->op == "*") return l * r;
-        if (expr->op == "/") return r != 0 ? l / r : 0; // split by zero check?
+        if (expr->op == "/") return r != 0 ? l / r : 0; 
         if (expr->op == "<") return l < r;
         if (expr->op == ">") return l > r;
         if (expr->op == "<=") return l <= r;
@@ -167,4 +206,27 @@ Value ExprEvaluator::visit(const UnaryExpr* expr, Environment* env) {
         if (std::holds_alternative<bool>(val)) return !std::get<bool>(val);
     }
     return std::monostate{};
+}
+
+Value ExprEvaluator::visit(const MemberExpr* expr, Environment* env) {
+    Value objVal = evaluate(expr->object.get(), env);
+
+    if (std::holds_alternative<InstanceObject*>(objVal)) {
+        InstanceObject* obj = std::get<InstanceObject*>(objVal);
+        
+        if (obj->fieldValues.count(expr->name)) {
+            return obj->fieldValues[expr->name];
+        }
+
+        if (obj->klass->methods.count(expr->name)) {
+             BoundMethod* bm = new BoundMethod();
+             bm->instance = obj;
+             bm->method = obj->klass->methods[expr->name];
+             return bm;
+        }
+
+        throw std::runtime_error("Property '" + expr->name + "' not found on instance of " + obj->klass->name);
+    }
+
+    throw std::runtime_error("Only instances have properties.");
 }

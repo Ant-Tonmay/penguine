@@ -8,6 +8,22 @@
 #include "parser/ast.h"
 #include "symbol_table/value.h"
 
+struct ClassObject {
+    std::string name;
+
+    std::unordered_map<std::string, MethodDef*> methods;
+    std::unordered_map<std::string, AccessModifier> methodAccess;
+
+    std::unordered_map<std::string, AccessModifier> fields;
+};
+
+struct InstanceObject {
+    ClassObject* klass;
+    std::unordered_map<std::string, Value> fieldValues;
+
+    InstanceObject(ClassObject* k) : klass(k) {}
+};
+
 
 inline std::string valueToString(const Value& val) {
     if (std::holds_alternative<int>(val)) {

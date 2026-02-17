@@ -28,6 +28,7 @@ private:
     void visit(const BreakStmt*, Environment*);
     void visit(const ContinueStmt*, Environment*);
 
+    void visit(const ClassStmt* stmt ,Environment* env); 
 
     bool isTruthy(const Value& v);
 };

@@ -19,6 +19,10 @@ void Interpreter::executeProgram(const Program* program) {
     for (const auto& func : program->functions) {
         userFunctions[func->name] = func.get();
     }
+
+    for (const auto& cls : program->classes) {
+        executeStmt(cls.get(), globals);
+    }
     
     if (userFunctions.count("main")) {
         callUserFunction(userFunctions["main"], {});
@@ -96,13 +100,20 @@ Value Interpreter::callFunctionByName(const std::string& name, const std::vector
              size_t newCap = arr->capacity == 0 ? 4 : arr->capacity * 2;
              Value* newData = new Value[newCap];
              for(size_t i=0; i<arr->length; ++i) newData[i] = arr->data[i];
-             delete[] arr->data;
+             if (arr->data) delete[] arr->data; 
              arr->data = newData;
              arr->capacity = newCap;
          }
          arr->data[arr->length++] = deepCopyIfNeeded(elem);
          
          return std::monostate{};
+    } else if (name == "length") {
+         if (args.size() != 1) throw std::runtime_error("length(array) expects 1 argument.");
+         Value arrVal = args[0];
+         if (std::holds_alternative<ArrayObject*>(arrVal)) {
+             return (int)std::get<ArrayObject*>(arrVal)->length;
+         }
+         throw std::runtime_error("Argument to len must be an array."); 
     }
     
     // User defined
@@ -137,6 +148,62 @@ Value Interpreter::callUserFunction(Function* fn, const std::vector<Value>& args
     }
     
     delete fnEnv;
+    return retVal;
+}
+
+Value Interpreter::instantiateClass(const std::string& className, const std::vector<Value>& args) {
+    if (!classes.count(className)) {
+         throw std::runtime_error("Unknown class: " + className);
+    }
+    
+    ClassObject* klass = classes[className];
+    InstanceObject* instance = new InstanceObject(klass);
+    
+    // Initialize fields to monostate (null)
+    for (const auto& [name, _] : klass->fields) {
+        instance->fieldValues[name] = std::monostate{};
+    }
+    
+    // Call constructor if exists (same name as class)
+    if (klass->methods.count(className)) {
+         callMethod(instance, className, args);
+    }
+    
+    return instance;
+}
+
+Value Interpreter::callMethod(InstanceObject* instance, const std::string& methodName, const std::vector<Value>& args) {
+    if (!instance->klass->methods.count(methodName)) {
+        throw std::runtime_error("Method '" + methodName + "' not found in class '" + instance->klass->name + "'.");
+    }
+    
+    MethodDef* method = instance->klass->methods[methodName];
+    
+    if (args.size() != method->params.size()) {
+         throw std::runtime_error("Method " + methodName + " expects " + std::to_string(method->params.size()) + " arguments.");
+    }
+    
+    Environment* methodEnv = new Environment(globals);
+    methodEnv->define("this", instance);
+    
+    for (size_t i = 0; i < method->params.size(); ++i) {
+        if (method->params[i].isRef) {
+          
+            methodEnv->define(method->params[i].name, args[i]);
+        } else {
+            methodEnv->define(method->params[i].name, deepCopyIfNeeded(args[i]));
+        }
+        
+    }
+    
+    Value retVal = std::monostate{};
+    try {
+        executor->executeBlock(method->body.get(), methodEnv);
+    } catch (const ReturnException& e) {
+        retVal = e.value;
+    }
+    
+    delete methodEnv;
     return retVal;
 }
 
