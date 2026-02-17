@@ -144,6 +144,20 @@ Value ExprEvaluator::visit(const CallExpr* expr, Environment* env) {
         
     }
 
+    if (auto mem = dynamic_cast<const MemberExpr*>(expr->callee.get())) {
+        try {
+            Value objVal = evaluate(mem->object.get(), env);
+            if (std::holds_alternative<ArrayObject*>(objVal)) {
+                 std::vector<Value> args;
+                 args.push_back(objVal);
+                 for(auto& arg : expr->arguments) args.push_back(evaluate(arg.get(), env));
+                 return interpreter->callFunctionByName(mem->name, args);
+            }
+        } catch (...) {
+            // If evaluation fails or not an array, ignore and proceed
+        }
+    }
+
     if (auto var = dynamic_cast<const VarExpr*>(expr->callee.get())) {
          std::vector<Value> args;
          for(auto& arg : expr->arguments) args.push_back(evaluate(arg.get(), env));
