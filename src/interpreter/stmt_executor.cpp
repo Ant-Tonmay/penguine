@@ -319,7 +319,7 @@ void StmtExecutor::visit(const ClassStmt* stmt ,Environment* env) {
             }
 
             else if (auto method = dynamic_cast<MethodDef*>(member.get())) {
-                klass->methods[method->name] = method;
+                klass->methods[method->name].push_back(method);
                 klass->methodAccess[method->name] = section->modifier;
             }
         }

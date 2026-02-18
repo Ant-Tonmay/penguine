@@ -11,7 +11,7 @@
 struct ClassObject {
     std::string name;
     ClassObject* parent;
-    std::unordered_map<std::string, MethodDef*> methods;
+    std::unordered_map<std::string, std::vector<MethodDef*>> methods;
     std::unordered_map<std::string, AccessModifier> methodAccess;
 
     std::unordered_map<std::string, AccessModifier> fields;
@@ -23,6 +23,8 @@ struct InstanceObject {
 
     InstanceObject(ClassObject* k) : klass(k) {}
 };
+
+
 
 
 inline std::string valueToString(const Value& val) {

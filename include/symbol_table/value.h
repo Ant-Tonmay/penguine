@@ -54,5 +54,5 @@ struct FunctionObject {
 };
 struct BoundMethod {
     InstanceObject* instance;
-    MethodDef* method;
+    std::string methodName;
 };

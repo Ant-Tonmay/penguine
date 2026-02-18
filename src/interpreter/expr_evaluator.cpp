@@ -115,7 +115,7 @@ Value ExprEvaluator::visit(const VarExpr* expr, Environment* env) {
                           
                           BoundMethod* bm = new BoundMethod();
                           bm->instance = obj;
-                          bm->method = curr->methods[expr->name];
+                          bm->methodName = expr->name;
                           return bm;
                      }
                      
@@ -205,7 +205,7 @@ Value ExprEvaluator::visit(const CallExpr* expr, Environment* env) {
 
         if (std::holds_alternative<BoundMethod*>(calleeVal)) {
             BoundMethod* bm = std::get<BoundMethod*>(calleeVal);
-            return interpreter->callMethod(bm->instance, bm->method->name, args);
+            return interpreter->callMethod(bm->instance, bm->methodName, args);
         }
         
     }
@@ -327,7 +327,7 @@ Value ExprEvaluator::visit(const MemberExpr* expr, Environment* env) {
                   
                   BoundMethod* bm = new BoundMethod();
                   bm->instance = obj;
-                  bm->method = curr->methods[expr->name];
+                  bm->methodName = expr->name;
                   return bm;
              }
              

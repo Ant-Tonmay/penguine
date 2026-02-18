@@ -193,15 +193,40 @@ Value Interpreter::instantiateClass(const std::string& className, const std::vec
 Value Interpreter::callMethod(InstanceObject* instance, const std::string& methodName, const std::vector<Value>& args) {
     
     // Find method in hierarchy
+    // Find method in hierarchy
     MethodDef* method = nullptr;
     ClassObject* ownerClass = nullptr;
     
     ClassObject* current = instance->klass;
     while (current) {
         if (current->methods.count(methodName)) {
-            method = current->methods[methodName];
-            ownerClass = current;
-            break;
+            // Check for overload with matching param count
+            const auto& overloads = current->methods[methodName];
+            for (auto* m : overloads) {
+                if (m->params.size() == args.size()) {
+                    method = m;
+                    ownerClass = current;
+                    break;
+                }
+            }
+            if (method) break;
+            
+            // If we found the name but not the right arity in this class, 
+            // do we continue searching up? 
+            // Standard overloading usually shadows based on name. 
+            // If Child has `add(a,b)`, and Parent has `add(a,b,c)`, 
+            // calling `child.add(1,2,3)` should probably work if we want "merge" semantics, 
+            // or fail if we want "hiding" semantics.
+            // C++ hides. Java allows overloading if signatures differ? No, overriding hides by name usually in C++. 
+            // Java: method resolution looks at all accessible methods.
+            // Let's implement "Merge" semantics for now (search up if arity doesn't match), 
+            // OR strict hiding.
+            // Let's go with: If name exists, we allow overloading across hierarchy? 
+            // Actually, `instantiateClass` walks up to find fields. 
+            // Let's search up if not found.
+            // BUT: If Child defines `init()`, and Parent defines `init(x)`, 
+            // usually we want strict control. 
+            // Let's stick to: Search up until found.
         }
         current = current->parent;
     }
