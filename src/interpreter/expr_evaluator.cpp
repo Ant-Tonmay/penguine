@@ -2,6 +2,34 @@
 #include "interpreter/interpreter.h"
 #include <iostream>
 
+static std::string accessModifierToString(AccessModifier m) {
+    if (m == AccessModifier::PUBLIC) return "public";
+    if (m == AccessModifier::PRIVATE) return "private";
+    if (m == AccessModifier::PROTECTED) return "protected";
+    return "unknown";
+}
+
+static bool isSubclass(ClassObject* child, ClassObject* parent) {
+    ClassObject* curr = child;
+    while (curr) {
+        if (curr == parent) return true;
+        curr = curr->parent;
+    }
+    return false;
+}
+
+static bool checkAccess(ClassObject* owner, ClassObject* context, AccessModifier access) {
+    if (access == AccessModifier::PUBLIC) return true;
+    if (access == AccessModifier::PRIVATE) {
+        return owner == context;
+    }
+    if (access == AccessModifier::PROTECTED) {
+        if (!context) return false;
+        return isSubclass(context, owner);
+    }
+    return false;
+}
+
 ExprEvaluator::ExprEvaluator(Interpreter* interpreter) : interpreter(interpreter) {}
 
 Value ExprEvaluator::evaluate(const Expr* expr, Environment* env) {
@@ -53,16 +81,49 @@ Value ExprEvaluator::visit(const VarExpr* expr, Environment* env) {
             Value thisVal = env->get("this");
             if (std::holds_alternative<InstanceObject*>(thisVal)) {
                 InstanceObject* obj = std::get<InstanceObject*>(thisVal);
-                if (obj->fieldValues.count(expr->name)) {
-                    return obj->fieldValues[expr->name];
+                
+                 // Determine context class
+                ClassObject* context = nullptr;
+                try {
+                    Value ctxVal = env->get("__context__");
+                    if (std::holds_alternative<std::string>(ctxVal)) {
+                        std::string ctxName = std::get<std::string>(ctxVal);
+                        if (interpreter->classes.count(ctxName)) {
+                            context = interpreter->classes[ctxName];
+                        }
+                    }
+                } catch(...) {
+                    // No context 
                 }
-                if (obj->klass->methods.count(expr->name)) {
-                     BoundMethod* bm = new BoundMethod();
-                     bm->instance = obj;
-                     bm->method = obj->klass->methods[expr->name];
-                     return bm;
+                
+                // Search up hierarchy
+                ClassObject* curr = obj->klass;
+                while (curr) {
+                     // Check fields
+                     if (curr->fields.count(expr->name)) {
+                         if (!checkAccess(curr, context, curr->fields[expr->name])) {
+                             throw std::runtime_error("Cannot access " + accessModifierToString(curr->fields[expr->name]) + " field '" + expr->name + "' of class '" + curr->name + "'.");
+                         }
+                         return obj->fieldValues[expr->name];
+                     }
+                     
+                     // Check methods
+                     if (curr->methods.count(expr->name)) {
+                          if (!checkAccess(curr, context, curr->methodAccess[expr->name])) {
+                               throw std::runtime_error("Cannot access " + accessModifierToString(curr->methodAccess[expr->name]) + " method '" + expr->name + "' of class '" + curr->name + "'.");
+                          }
+                          
+                          BoundMethod* bm = new BoundMethod();
+                          bm->instance = obj;
+                          bm->method = curr->methods[expr->name];
+                          return bm;
+                     }
+                     
+                     curr = curr->parent;
                 }
             }
+        } catch (const std::runtime_error& re) {
+            throw re; 
         } catch (...) {
             // 'this' not in scope or error
         }
@@ -130,7 +191,12 @@ Value ExprEvaluator::visit(const CallExpr* expr, Environment* env) {
         calleeVal = evaluate(expr->callee.get(), env);
         evaluated = true;
     } catch (const std::runtime_error& e) {
-       
+       std::string msg = e.what();
+       if (msg.find("Cannot access") != std::string::npos || msg.find("not found") != std::string::npos) {
+           if (msg.find("Cannot access") != std::string::npos) {
+               throw;
+           }
+       }
     }
 
     if (evaluated) {
@@ -228,15 +294,44 @@ Value ExprEvaluator::visit(const MemberExpr* expr, Environment* env) {
     if (std::holds_alternative<InstanceObject*>(objVal)) {
         InstanceObject* obj = std::get<InstanceObject*>(objVal);
         
-        if (obj->fieldValues.count(expr->name)) {
-            return obj->fieldValues[expr->name];
+         // Determine context class
+        ClassObject* context = nullptr;
+        try {
+            Value ctxVal = env->get("__context__");
+            if (std::holds_alternative<std::string>(ctxVal)) {
+                std::string ctxName = std::get<std::string>(ctxVal);
+                if (interpreter->classes.count(ctxName)) {
+                    context = interpreter->classes[ctxName];
+                }
+            }
+        } catch(...) {
+            // No context 
         }
-
-        if (obj->klass->methods.count(expr->name)) {
-             BoundMethod* bm = new BoundMethod();
-             bm->instance = obj;
-             bm->method = obj->klass->methods[expr->name];
-             return bm;
+        
+        // Search up hierarchy
+        ClassObject* curr = obj->klass;
+        while (curr) {
+             // Check fields
+             if (curr->fields.count(expr->name)) {
+                 if (!checkAccess(curr, context, curr->fields[expr->name])) {
+                     throw std::runtime_error("Cannot access " + accessModifierToString(curr->fields[expr->name]) + " field '" + expr->name + "' of class '" + curr->name + "'.");
+                 }
+                 return obj->fieldValues[expr->name];
+             }
+             
+             // Check methods
+             if (curr->methods.count(expr->name)) {
+                  if (!checkAccess(curr, context, curr->methodAccess[expr->name])) {
+                       throw std::runtime_error("Cannot access " + accessModifierToString(curr->methodAccess[expr->name]) + " method '" + expr->name + "' of class '" + curr->name + "'.");
+                  }
+                  
+                  BoundMethod* bm = new BoundMethod();
+                  bm->instance = obj;
+                  bm->method = curr->methods[expr->name];
+                  return bm;
+             }
+             
+             curr = curr->parent;
         }
 
         throw std::runtime_error("Property '" + expr->name + "' not found on instance of " + obj->klass->name);

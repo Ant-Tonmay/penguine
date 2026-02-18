@@ -302,6 +302,14 @@ void StmtExecutor::visit(const ClassStmt* stmt ,Environment* env) {
     auto klass = new ClassObject();
     klass->name = stmt->name;
 
+    if (!stmt->parentName.empty()) {
+        if (interpreter->classes.find(stmt->parentName) == interpreter->classes.end()) {
+            throw std::runtime_error("Parent class '" + stmt->parentName + "' not defined.");
+        }
+        ClassObject* parent = interpreter->classes[stmt->parentName];
+        klass->parent = parent;
+    }
+
     for (auto& section : stmt->sections) {
 
         for (auto& member : section->members) {

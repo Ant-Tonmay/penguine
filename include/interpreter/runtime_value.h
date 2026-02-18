@@ -10,7 +10,7 @@
 
 struct ClassObject {
     std::string name;
-
+    ClassObject* parent;
     std::unordered_map<std::string, MethodDef*> methods;
     std::unordered_map<std::string, AccessModifier> methodAccess;
 

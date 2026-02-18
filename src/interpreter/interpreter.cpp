@@ -159,25 +159,56 @@ Value Interpreter::instantiateClass(const std::string& className, const std::vec
     ClassObject* klass = classes[className];
     InstanceObject* instance = new InstanceObject(klass);
     
-    // Initialize fields to monostate (null)
-    for (const auto& [name, _] : klass->fields) {
-        instance->fieldValues[name] = std::monostate{};
+    ClassObject* current = klass;
+    while (current) {
+        for (const auto& [name, _] : current->fields) {
+            if (instance->fieldValues.find(name) == instance->fieldValues.end()) {
+                instance->fieldValues[name] = std::monostate{};
+            }
+        }
+        current = current->parent;
     }
-    
-    // Call constructor if exists (same name as class)
-    if (klass->methods.count(className)) {
-         callMethod(instance, className, args);
+    try {
+        callMethod(instance, className, args);
+    } catch (const std::runtime_error&) {
+       
+        
+        bool found = false;
+        ClassObject* search = klass;
+        while(search) {
+            if (search->methods.count(className)) {
+                found = true; 
+                break;
+            }
+            search = search->parent;
+        }
+        if(!found && !args.empty()) {
+             throw std::runtime_error("Constructor for " + className + " not found, but arguments provided.");
+        }
     }
     
     return instance;
 }
 
 Value Interpreter::callMethod(InstanceObject* instance, const std::string& methodName, const std::vector<Value>& args) {
-    if (!instance->klass->methods.count(methodName)) {
-        throw std::runtime_error("Method '" + methodName + "' not found in class '" + instance->klass->name + "'.");
+    
+    // Find method in hierarchy
+    MethodDef* method = nullptr;
+    ClassObject* ownerClass = nullptr;
+    
+    ClassObject* current = instance->klass;
+    while (current) {
+        if (current->methods.count(methodName)) {
+            method = current->methods[methodName];
+            ownerClass = current;
+            break;
+        }
+        current = current->parent;
     }
     
-    MethodDef* method = instance->klass->methods[methodName];
+    if (!method) {
+        throw std::runtime_error("Method '" + methodName + "' not found in class '" + instance->klass->name + "'.");
+    }
     
     if (args.size() != method->params.size()) {
          throw std::runtime_error("Method " + methodName + " expects " + std::to_string(method->params.size()) + " arguments.");
@@ -186,14 +217,14 @@ Value Interpreter::callMethod(InstanceObject* instance, const std::string& metho
     Environment* methodEnv = new Environment(globals);
     methodEnv->define("this", instance);
     
+    methodEnv->define("__context__", std::string(ownerClass->name));
+    
     for (size_t i = 0; i < method->params.size(); ++i) {
         if (method->params[i].isRef) {
-          
             methodEnv->define(method->params[i].name, args[i]);
         } else {
             methodEnv->define(method->params[i].name, deepCopyIfNeeded(args[i]));
         }
-        
     }
     
     Value retVal = std::monostate{};

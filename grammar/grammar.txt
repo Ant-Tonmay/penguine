@@ -20,7 +20,7 @@ statement   →
     | block
 
 class_stmt
-    → "class" IDENTIFIER "{" section* "}"
+    →  "class" IDENTIFIER ("inherits" IDENTIFIER)? "{" section* "}"
 
 section
     → access_modifier "{" class_member* "}"

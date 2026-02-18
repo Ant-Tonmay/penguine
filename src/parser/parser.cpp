@@ -456,6 +456,13 @@ std::unique_ptr<Expr> Parser::parsePrimary() {
 std::unique_ptr<ClassStmt> Parser::parseClassStmt() {
     consume(TokenType::KEYWORD, "Expect 'class' keyword.");
     Token name = consume(TokenType::IDENTIFIER, "Expect class name.");
+    std::string parentName = "";
+    if (check(TokenType::KEYWORD) && peek().lexeme == "inherits") {
+        advance();
+        Token parent = consume(TokenType::IDENTIFIER, "Expect class name.");
+        parentName = parent.lexeme;
+    }
+    
 
     consume(TokenType::LBRACE, "Expect '{' after class name.");
 
@@ -469,13 +476,14 @@ std::unique_ptr<ClassStmt> Parser::parseClassStmt() {
             std::vector<std::unique_ptr<ClassMember>> members;
             members.push_back(std::move(member));
             // Default to private for direct members? Or public? Example doesn't specify, assuming private for safety.
-            sections.push_back(std::make_unique<ClassSection>(AccessModifier::PRIVATE, std::move(members)));
+            // Update: Examples imply PUBLIC default (like Python/JS).
+            sections.push_back(std::make_unique<ClassSection>(AccessModifier::PUBLIC, std::move(members)));
         }
     }
 
     consume(TokenType::RBRACE, "Expect '}' after class body.");
 
-    return std::make_unique<ClassStmt>(name.lexeme, std::move(sections));
+    return std::make_unique<ClassStmt>(name.lexeme, std::move(sections), parentName);
 }
 
 std::unique_ptr<ClassSection> Parser::parseSection() {

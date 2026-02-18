@@ -245,12 +245,15 @@ struct ClassSection : ASTNode {
 };
 struct ClassStmt : Stmt {
     std::string name;
+    std::string parentName; 
     std::vector<std::unique_ptr<ClassSection>> sections;
 
     ClassStmt(std::string name,
-              std::vector<std::unique_ptr<ClassSection>> sections)
+              std::vector<std::unique_ptr<ClassSection>> sections,
+              std::string parentName = "")
         : name(std::move(name)),
-          sections(std::move(sections)) {}
+          sections(std::move(sections)),
+          parentName(std::move(parentName)) {}
 };
 
 struct Program : ASTNode {
