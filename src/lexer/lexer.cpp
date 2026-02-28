@@ -63,6 +63,14 @@ void Lexer::number() {
     size_t start = current - 1;
     while (isdigit(peek())) advance();
 
+    // Look for a fractional part.
+    if (peek() == '.' && isdigit(source[current + 1])) {
+        // Consume the "."
+        advance();
+
+        while (isdigit(peek())) advance();
+    }
+
     std::string value = source.substr(start, current - start);
     addToken(TokenType::NUMBER, value);
 }

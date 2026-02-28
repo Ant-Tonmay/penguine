@@ -26,6 +26,9 @@ add_library(penguin_core
     src/interpreter/stmt_executor.cpp
     src/interpreter/deep_copy.cpp
     src/symbol_table/symbol_table.cpp
+    src/vm/chunk.cpp
+    src/vm/vm.cpp
+    src/vm/compiler.cpp
 )
 
 target_include_directories(penguin_core
@@ -85,6 +88,10 @@ add_test(NAME ParserLoopsTest COMMAND penguin_parser_loops_test)
 add_executable(penguin_parser_classes_test src/test_parser_classes.cpp)
 target_link_libraries(penguin_parser_classes_test PRIVATE penguin_core)
 add_test(NAME ParserClassesTest COMMAND penguin_parser_classes_test)
+
+add_executable(penguin_vm_test src/test_vm.cpp)
+target_link_libraries(penguin_vm_test PRIVATE penguin_core)
+add_test(NAME VMTest COMMAND penguin_vm_test)
 
 # -----------------------------
 # Debug flags

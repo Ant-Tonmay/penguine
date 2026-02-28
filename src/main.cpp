@@ -5,6 +5,8 @@
 #include "lexer/lexer.h"
 #include "parser/parser.h"
 #include "interpreter/interpreter.h"
+#include "vm/compiler.h"
+#include "vm/vm.h"
 
 static void printInfo() {
     std::cout << "Hello i am penguin , A brand new programming language !!\n";
@@ -45,17 +47,28 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
+    bool useVM = false;
+    std::string filename;
 
-
-    if (argc != 2) {
-        std::cerr << "Usage: penguin <file.pg>\n";
-        return 1;
+    if (arg1 == "--vm") {
+        useVM = true;
+        if (argc != 3) {
+            std::cerr << "Usage: penguin --vm <file.pg>\n";
+            return 1;
+        }
+        filename = argv[2];
+    } else {
+        if (argc != 2) {
+             std::cerr << "Usage: penguin <file.pg>\n";
+             return 1;
+        }
+        filename = argv[1];
     }
 
     // 1. Read source file
-    std::ifstream file(argv[1]);
+    std::ifstream file(filename);
     if (!file) {
-        std::cerr << "Error: could not open file " << argv[1] << "\n";
+        std::cerr << "Error: could not open file " << filename << "\n";
         return 1;
     }
 
@@ -74,8 +87,15 @@ int main(int argc, char* argv[]) {
         auto program = parser.parse();
 
         // 4. Interpret
-        Interpreter interpreter;
-        interpreter.executeProgram(program.get());
+        if (useVM) {
+             vm::Compiler compiler;
+             compiler.compile(program.get());
+             vm::VM vm;
+             vm.run(compiler.chunk);
+        } else {
+             Interpreter interpreter;
+             interpreter.executeProgram(program.get());
+        }
     }
     catch (const std::exception& e) {
         std::cerr << "Runtime error: " << e.what() << "\n";
