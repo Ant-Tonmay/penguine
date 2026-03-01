@@ -48,7 +48,7 @@ struct ArrayObject {
 
     ArrayObject() : isFixed(false), length(0), capacity(0), data(nullptr), refCount(0) {}
     ~ArrayObject() {
-        if (data) delete[] data;
+        // if (data) delete[] data;
     }
 };
 struct FunctionObject {
