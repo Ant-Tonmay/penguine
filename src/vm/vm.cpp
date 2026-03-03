@@ -35,19 +35,19 @@ inline bool as_bool(const Value& v) {
     return false;
 }
 
-void VM::run(Chunk& chunk){
+void VM::run(FunctionObject* script){
 
-    frames.push_back({&chunk,0,0});
+    frames.push_back({script, 0, 0});
 
     while(true){
         auto& frame = frames.back();
-        uint8_t instruction = frame.chunk->code[frame.ip++];
+        uint8_t instruction = frame.function->chunk.code[frame.ip++];
 
         switch(instruction){
 
             case OP_CONSTANT:{
-                uint8_t idx = frame.chunk->code[frame.ip++];
-                push(frame.chunk->constants[idx]);
+                uint8_t idx = frame.function->chunk.code[frame.ip++];
+                push(frame.function->chunk.constants[idx]);
                 break;
             }
             case OP_TRUE: push(true); break;
@@ -55,24 +55,24 @@ void VM::run(Chunk& chunk){
             case OP_NULL: push(std::monostate{}); break;
 
             case OP_GET_LOCAL: {
-                uint8_t slot = frame.chunk->code[frame.ip++];
+                uint8_t slot = frame.function->chunk.code[frame.ip++];
                 push(stack[frame.base + slot]);
                 break;
             }
             case OP_SET_LOCAL: {
-                uint8_t slot = frame.chunk->code[frame.ip++];
+                uint8_t slot = frame.function->chunk.code[frame.ip++];
                 stack[frame.base + slot] = stack.back();
                 break;
             }
             case OP_GET_GLOBAL: {
-                uint8_t name_idx = frame.chunk->code[frame.ip++];
-                std::string name = std::get<std::string>(frame.chunk->constants[name_idx]);
+                uint8_t name_idx = frame.function->chunk.code[frame.ip++];
+                std::string name = std::get<std::string>(frame.function->chunk.constants[name_idx]);
                 push(globals[name]);
                 break;
             }
             case OP_SET_GLOBAL: {
-                uint8_t name_idx = frame.chunk->code[frame.ip++];
-                std::string name = std::get<std::string>(frame.chunk->constants[name_idx]);
+                uint8_t name_idx = frame.function->chunk.code[frame.ip++];
+                std::string name = std::get<std::string>(frame.function->chunk.constants[name_idx]);
                 globals[name] = stack.back();
                 break;
             }
@@ -212,14 +212,14 @@ void VM::run(Chunk& chunk){
             }
 
             case OP_JUMP: {
-                uint16_t offset = (frame.chunk->code[frame.ip] << 8) | frame.chunk->code[frame.ip + 1];
+                uint16_t offset = (frame.function->chunk.code[frame.ip] << 8) | frame.function->chunk.code[frame.ip + 1];
                 frame.ip += 2;
                 frame.ip += offset;
                 break;
             }
 
             case OP_JUMP_IF_FALSE: {
-                uint16_t offset = (frame.chunk->code[frame.ip] << 8) | frame.chunk->code[frame.ip + 1];
+                uint16_t offset = (frame.function->chunk.code[frame.ip] << 8) | frame.function->chunk.code[frame.ip + 1];
                 frame.ip += 2;
                 if (!as_bool(stack.back())) {
                     frame.ip += offset;
@@ -228,7 +228,7 @@ void VM::run(Chunk& chunk){
             }
 
             case OP_LOOP: {
-                uint16_t offset = (frame.chunk->code[frame.ip] << 8) | frame.chunk->code[frame.ip + 1];
+                uint16_t offset = (frame.function->chunk.code[frame.ip] << 8) | frame.function->chunk.code[frame.ip + 1];
                 frame.ip += 2;
                 frame.ip -= offset;
                 break;
@@ -252,8 +252,52 @@ void VM::run(Chunk& chunk){
                 break;
             }
 
-            case OP_RETURN:{
-                return;
+            case OP_CALL: {
+                uint8_t argCount = frame.function->chunk.code[frame.ip++];
+                // The stack looks like: [... callee arg0 arg1 ... argN]
+                // callee is at stack[top - argCount - 1]
+                Value calleeVal = stack[stack.size() - argCount - 1];
+
+                if (!std::holds_alternative<FunctionObject*>(calleeVal)) {
+                    std::cerr << "Runtime error: tried to call a non-function" << std::endl;
+                    return;
+                }
+
+                FunctionObject* callee = std::get<FunctionObject*>(calleeVal);
+
+                if (argCount != callee->arity) {
+                    std::cerr << "Runtime error: expected " << callee->arity 
+                              << " arguments but got " << (int)argCount << std::endl;
+                    return;
+                }
+
+                // Push a new call frame
+                // base points to the first argument (callee is at base - 1)
+                size_t base = stack.size() - argCount;
+                frames.push_back({callee, 0, base});
+                break;
+            }
+
+            case OP_RETURN: {
+                Value result = pop();
+
+                // Get the current frame's base before popping it
+                size_t base = frame.base;
+
+                frames.pop_back();
+
+                if (frames.empty()) {
+                    // We returned from the top-level script
+                    return;
+                }
+
+                // Discard the called function's locals, args, and the callee slot
+                // Stack should be truncated to base - 1 (removing callee too)
+                stack.resize(base - 1);
+
+                // Push the return value
+                push(result);
+                break;
             }
 
             case OP_HALT:

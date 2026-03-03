@@ -6,9 +6,9 @@
 namespace vm {
 
 struct CallFrame {
-    Chunk* chunk;
+    FunctionObject* function;
     size_t ip;
-    size_t base;
+    size_t base;  // stack base for this call frame
 };
 
 class VM {
@@ -20,7 +20,7 @@ public:
     void push(Value v);
     Value pop();
 
-    void run(Chunk& chunk);
+    void run(FunctionObject* script);
 };
 
 }

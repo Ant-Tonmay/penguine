@@ -89,9 +89,13 @@ int main(int argc, char* argv[]) {
         // 4. Interpret
         if (useVM) {
              vm::Compiler compiler;
-             compiler.compile(program.get());
-             vm::VM vm;
-             vm.run(compiler.chunk);
+             auto* script = compiler.compile(program.get());
+             vm::VM vmInstance;
+             // Register all compiled functions as globals
+             for (auto* fn : compiler.compiledFunctions) {
+                 vmInstance.globals[fn->name] = fn;
+             }
+             vmInstance.run(script);
         } else {
              Interpreter interpreter;
              interpreter.executeProgram(program.get());

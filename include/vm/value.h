@@ -4,11 +4,14 @@
 #include <string>
 #include <stdexcept>
 #include <iostream>
-#include "parser/ast.h"
 #include <unordered_map>
+#include <vector>
+#include <cstdint>
+#include "opcode.h"
 
 namespace vm {
 
+// Forward declarations
 struct FunctionObject;
 struct ArrayObject; 
 struct ObjectObject;
@@ -35,6 +38,26 @@ using Value = std::variant<
     std::string 
 >;
 
+// Chunk definition — here so FunctionObject can hold a Chunk by value.
+struct Chunk {
+    std::vector<uint8_t> code;
+    std::vector<Value> constants;
+
+    void write(uint8_t byte) {
+        code.push_back(byte);
+    }
+
+    void write16(uint16_t value) {
+        code.push_back((value >> 8) & 0xff);
+        code.push_back(value & 0xff);
+    }
+
+    int addConstant(Value v) {
+        constants.push_back(v);
+        return constants.size() - 1;
+    }
+};
+
 struct ObjectObject {
     std::unordered_map<std::string, Value> fields;
 };
@@ -51,9 +74,16 @@ struct ArrayObject {
         // if (data) delete[] data;
     }
 };
+
 struct FunctionObject {
-    Function* astNode; 
+    std::string name;
+    int arity;
+    Chunk chunk;
+
+    FunctionObject(const std::string& name, int arity)
+        : name(name), arity(arity) {}
 };
+
 struct BoundMethod {
     InstanceObject* instance;
     std::string methodName;

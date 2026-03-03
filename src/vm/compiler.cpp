@@ -4,43 +4,48 @@
 
 namespace vm {
 
-// --- Jump Helpers ---
+
+Chunk& Compiler::currentChunk() {
+    return currentFunction->chunk;
+}
+
+void Compiler::emit(uint8_t byte) {
+    currentChunk().write(byte);
+}
+
+void Compiler::emitConstant(Value v) {
+    int idx = currentChunk().addConstant(v);
+    emit(OP_CONSTANT);
+    emit(idx);
+}
+
+
 int Compiler::emitJump(uint8_t instruction) {
     emit(instruction);
     emit(0xff);
     emit(0xff);
-    return chunk.code.size() - 2;
+    return currentChunk().code.size() - 2;
 }
 
 void Compiler::patchJump(int offset) {
-    int jump = chunk.code.size() - offset - 2;
+    int jump = currentChunk().code.size() - offset - 2;
     if (jump > UINT16_MAX) {
         // Technically this should throw a compiler error
     }
-    chunk.code[offset] = (jump >> 8) & 0xff;
-    chunk.code[offset + 1] = jump & 0xff;
+    currentChunk().code[offset] = (jump >> 8) & 0xff;
+    currentChunk().code[offset + 1] = jump & 0xff;
 }
 
 void Compiler::emitLoop(int loopStart) {
     emit(OP_LOOP);
-    int offset = chunk.code.size() - loopStart + 2;
+    int offset = currentChunk().code.size() - loopStart + 2;
     if (offset > UINT16_MAX) {
         // Technically this should throw a compiler error
     }
     emit((offset >> 8) & 0xff);
     emit(offset & 0xff);
 }
-// --------------------
 
-void Compiler::emit(uint8_t byte){
-    chunk.write(byte);
-}
-
-void Compiler::emitConstant(Value v){
-    int idx = chunk.addConstant(v);
-    emit(OP_CONSTANT);
-    emit(idx);  
-}
 
 void Compiler::beginScope() {
     scopeDepth++;
@@ -67,32 +72,79 @@ int Compiler::resolveLocal(const std::string& name) {
     return -1;
 }
 
-void Compiler::compile(ASTNode* node){
+
+void Compiler::compileFunction(Function* func) {
+    // Create a new FunctionObject for this function
+    auto* fnObj = new FunctionObject(func->name, func->params.size());
+
+    // Save current compiler state
+    FunctionObject* enclosingFunction = currentFunction;
+    std::vector<Local> enclosingLocals = std::move(locals);
+    int enclosingScopeDepth = scopeDepth;
+
+    // Switch to the new function context
+    currentFunction = fnObj;
+    locals.clear();
+    scopeDepth = 0;
+
+    // Begin scope for function body
+    beginScope();
+
+    for (const auto& param : func->params) {
+        addLocal(param.name);
+    }
+
+    for (const auto& stmt : func->body->statements) {
+        compileStmt(stmt.get());
+    }
+
+    emit(OP_NULL);
+    emit(OP_RETURN);
+
+    currentFunction = enclosingFunction;
+    locals = std::move(enclosingLocals);
+    scopeDepth = enclosingScopeDepth;
+
+    compiledFunctions.push_back(fnObj);
+}
+
+FunctionObject* Compiler::compile(ASTNode* node) {
     if (auto* program = dynamic_cast<Program*>(node)) {
+       
+        for (const auto& func : program->functions) {
+            if (func->name != "main") {
+                compileFunction(func.get());
+            }
+        }
+
+       
+        auto* scriptFn = new FunctionObject("__script__", 0);
+        currentFunction = scriptFn;
+        locals.clear();
+        scopeDepth = 0;
+
         bool foundMain = false;
         for (const auto& func : program->functions) {
             if (func->name == "main") {
-                compile(func->body.get());
-                emit(OP_HALT);
+                beginScope();
+                for (const auto& stmt : func->body->statements) {
+                    compileStmt(stmt.get());
+                }
+                endScope();
                 foundMain = true;
                 break;
             }
         }
-        if (!foundMain) {
-            emit(OP_HALT);
-        }
-    } 
-    else if (auto* block = dynamic_cast<Block*>(node)) {
-        beginScope();
-        for (const auto& stmt : block->statements) {
-            compileStmt(stmt.get());
-        }
-        endScope();
+
+        emit(OP_HALT);
+        return scriptFn;
     }
-    else {
-        compileStmt(node);
-        emit(OP_RETURN);
-    }
+
+    auto* scriptFn = new FunctionObject("__script__", 0);
+    currentFunction = scriptFn;
+    compileStmt(node);
+    emit(OP_RETURN);
+    return scriptFn;
 }
 
 void Compiler::compileExpr(ASTNode* node){
@@ -116,10 +168,23 @@ void Compiler::compileExpr(ASTNode* node){
             emit(arg);
         } else {
             Value nameVal = var->name;
-            int idx = chunk.addConstant(nameVal);
+            int idx = currentChunk().addConstant(nameVal);
             emit(OP_GET_GLOBAL);
             emit(idx);
         }
+    }
+    else if (auto* call = dynamic_cast<CallExpr*>(node)) {
+        // Compile the callee (pushes FunctionObject* onto stack)
+        compileExpr(call->callee.get());
+
+        // Compile each argument
+        for (const auto& arg : call->arguments) {
+            compileExpr(arg.get());
+        }
+
+        // Emit OP_CALL with the argument count
+        emit(OP_CALL);
+        emit(static_cast<uint8_t>(call->arguments.size()));
     }
     else if (auto* bin = dynamic_cast<BinaryExpr*>(node)) {
 
@@ -154,6 +219,7 @@ void Compiler::compileExpr(ASTNode* node){
         else if (bin->op == "-") emit(OP_SUB);
         else if (bin->op == "*") emit(OP_MUL);
         else if (bin->op == "/") emit(OP_DIV);
+        else if (bin->op == "%") emit(OP_MOD);
         else if (bin->op == ">") emit(OP_GREATER);
         else if (bin->op == ">=") emit(OP_GREATER_EQUAL);
         else if (bin->op == "<") emit(OP_LESSER);
@@ -187,6 +253,14 @@ void Compiler::compileStmt(ASTNode* node) {
         compileExpr(exprStmt->expression.get());
         emit(OP_POP);
     }
+    else if (auto* returnStmt = dynamic_cast<ReturnStmt*>(node)) {
+        if (returnStmt->value) {
+            compileExpr(returnStmt->value.get());
+        } else {
+            emit(OP_NULL);
+        }
+        emit(OP_RETURN);
+    }
     else if (auto* ifStmt = dynamic_cast<IfStmt*>(node)) {
         compileExpr(ifStmt->condition.get());
         int thenJump = emitJump(OP_JUMP_IF_FALSE);
@@ -205,7 +279,7 @@ void Compiler::compileStmt(ASTNode* node) {
         patchJump(elseJump);
     }
     else if (auto* whileStmt = dynamic_cast<WhileStmt*>(node)) {
-        int loopStart = chunk.code.size();
+        int loopStart = currentChunk().code.size();
         
         loopStack.push_back({loopStart, {}});
         
@@ -232,7 +306,7 @@ void Compiler::compileStmt(ASTNode* node) {
             compileStmt(forStmt->init.get());
         }
         
-        int loopStart = chunk.code.size();
+        int loopStart = currentChunk().code.size();
         int exitJump = -1;
         
         if (forStmt->condition) {
@@ -286,7 +360,7 @@ void Compiler::compileStmt(ASTNode* node) {
                      // Global scope
                      isLocal = false;
                      Value nameVal = var->name;
-                     arg = chunk.addConstant(nameVal);
+                     arg = currentChunk().addConstant(nameVal);
                 }
 
                 if (assign.op != TokenType::EQUAL) {

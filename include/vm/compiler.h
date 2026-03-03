@@ -18,14 +18,17 @@ struct LoopContext {
 
 class Compiler {
 public:
-    Chunk chunk;
+    FunctionObject* currentFunction;              // function being compiled right now
+    std::vector<FunctionObject*> compiledFunctions; // all compiled non-main functions
     std::vector<Local> locals;
     int scopeDepth = 0;
     std::vector<LoopContext> loopStack;
 
-    void compile(ASTNode* node);
+    FunctionObject* compile(ASTNode* node);
 
 private:
+    Chunk& currentChunk();
+
     void emit(uint8_t byte);
     void emitConstant(Value v);
 
@@ -38,6 +41,7 @@ private:
     void addLocal(const std::string& name);
     int resolveLocal(const std::string& name);
 
+    void compileFunction(Function* func);
     void compileExpr(ASTNode*);
     void compileStmt(ASTNode*);
 };
