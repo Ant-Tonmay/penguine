@@ -13,6 +13,11 @@ struct Chunk {
         code.push_back(byte);
     }
 
+    void write16(uint16_t value) {
+        code.push_back((value >> 8) & 0xff);
+        code.push_back(value & 0xff);
+    }
+
     int addConstant(Value v) {
         constants.push_back(v);
         return constants.size() - 1;

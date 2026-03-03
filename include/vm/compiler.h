@@ -21,6 +21,10 @@ private:
     void emit(uint8_t byte);
     void emitConstant(Value v);
 
+    int emitJump(uint8_t instruction);
+    void patchJump(int offset);
+    void emitLoop(int loopStart);
+
     void beginScope();
     void endScope();
     void addLocal(const std::string& name);

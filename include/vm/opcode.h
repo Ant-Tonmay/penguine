@@ -46,6 +46,9 @@ enum OpCode {
     OP_LOGICAL_OR_EQUAL,
     OP_XOR_EQUAL,
     OP_NEGATE,
+    OP_JUMP,
+    OP_JUMP_IF_FALSE,
+    OP_LOOP,
     OP_RETURN
 };
 

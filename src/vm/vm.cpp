@@ -211,6 +211,29 @@ void VM::run(Chunk& chunk){
                 break;
             }
 
+            case OP_JUMP: {
+                uint16_t offset = (frame.chunk->code[frame.ip] << 8) | frame.chunk->code[frame.ip + 1];
+                frame.ip += 2;
+                frame.ip += offset;
+                break;
+            }
+
+            case OP_JUMP_IF_FALSE: {
+                uint16_t offset = (frame.chunk->code[frame.ip] << 8) | frame.chunk->code[frame.ip + 1];
+                frame.ip += 2;
+                if (!as_bool(stack.back())) {
+                    frame.ip += offset;
+                }
+                break;
+            }
+
+            case OP_LOOP: {
+                uint16_t offset = (frame.chunk->code[frame.ip] << 8) | frame.chunk->code[frame.ip + 1];
+                frame.ip += 2;
+                frame.ip -= offset;
+                break;
+            }
+
             case OP_NEGATE:{
                 double v = as_double(pop());
                 push(-v);
@@ -221,6 +244,8 @@ void VM::run(Chunk& chunk){
                 auto v = pop();
                 if (std::holds_alternative<bool>(v)) {
                     std::cout << (std::get<bool>(v) ? "true" : "false") << std::endl;
+                } else if (std::holds_alternative<std::string>(v)) {
+                    std::cout << std::get<std::string>(v) << std::endl;
                 } else {
                     std::cout << as_double(v) << std::endl;
                 }
