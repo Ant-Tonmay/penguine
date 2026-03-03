@@ -1,6 +1,7 @@
 #pragma once
 #include "chunk.h"
 #include "../parser/ast.h"
+#include <vector>
 
 namespace vm {
 
@@ -9,11 +10,18 @@ struct Local {
     int depth;
 };
 
+struct LoopContext {
+    int loopStart;                    // offset to jump back to for 'continue' (while loops)
+    std::vector<int> breakJumps;      // pending forward jumps for 'break'
+    std::vector<int> continueJumps;   // pending forward jumps for 'continue' (for loops)
+};
+
 class Compiler {
 public:
     Chunk chunk;
     std::vector<Local> locals;
     int scopeDepth = 0;
+    std::vector<LoopContext> loopStack;
 
     void compile(ASTNode* node);
 

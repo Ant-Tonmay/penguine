@@ -207,6 +207,8 @@ void Compiler::compileStmt(ASTNode* node) {
     else if (auto* whileStmt = dynamic_cast<WhileStmt*>(node)) {
         int loopStart = chunk.code.size();
         
+        loopStack.push_back({loopStart, {}});
+        
         compileExpr(whileStmt->condition.get());
         int exitJump = emitJump(OP_JUMP_IF_FALSE);
         emit(OP_POP); // Pop condition if we enter the loop
@@ -216,6 +218,12 @@ void Compiler::compileStmt(ASTNode* node) {
         
         patchJump(exitJump);
         emit(OP_POP); // Pop condition if we just exited the loop
+        
+        // Patch all break jumps to here (after the loop)
+        for (int bj : loopStack.back().breakJumps) {
+            patchJump(bj);
+        }
+        loopStack.pop_back();
     }
     else if (auto* forStmt = dynamic_cast<ForStmt*>(node)) {
         beginScope();
@@ -233,7 +241,15 @@ void Compiler::compileStmt(ASTNode* node) {
             emit(OP_POP); // Pop condition if we enter the loop
         }
         
+        // loopStart = -1 signals that continue needs forward jumps (patched to increment)
+        loopStack.push_back({-1, {}, {}});
+        
         compileStmt(forStmt->body.get());
+        
+        // Patch all continue jumps to here (the increment section)
+        for (int cj : loopStack.back().continueJumps) {
+            patchJump(cj);
+        }
         
         if (forStmt->increment) {
             compileStmt(forStmt->increment.get());
@@ -245,6 +261,12 @@ void Compiler::compileStmt(ASTNode* node) {
             patchJump(exitJump);
             emit(OP_POP); // Pop condition if we just exited the loop
         }
+        
+        // Patch all break jumps to here (after the loop)
+        for (int bj : loopStack.back().breakJumps) {
+            patchJump(bj);
+        }
+        loopStack.pop_back();
         
         endScope();
     }
@@ -312,6 +334,25 @@ void Compiler::compileStmt(ASTNode* node) {
             compileStmt(stmt.get());
         }
         endScope();
+    }
+    else if (dynamic_cast<BreakStmt*>(node)) {
+        if (!loopStack.empty()) {
+            int breakJump = emitJump(OP_JUMP);
+            loopStack.back().breakJumps.push_back(breakJump);
+        }
+    }
+    else if (dynamic_cast<ContinueStmt*>(node)) {
+        if (!loopStack.empty()) {
+            auto& loop = loopStack.back();
+            if (loop.loopStart >= 0) {
+                // While loop: jump back to condition
+                emitLoop(loop.loopStart);
+            } else {
+                // For loop: forward jump to increment (patched later)
+                int continueJump = emitJump(OP_JUMP);
+                loop.continueJumps.push_back(continueJump);
+            }
+        }
     }
     else if (dynamic_cast<Expr*>(node)) {
         compileExpr(node);
