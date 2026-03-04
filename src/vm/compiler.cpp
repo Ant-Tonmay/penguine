@@ -1,6 +1,7 @@
 #include "vm/compiler.h"
 #include <string>
 #include "lexer/lexer.h"
+#include "parser/parser.h"
 
 namespace vm {
 
@@ -159,7 +160,46 @@ void Compiler::compileExpr(ASTNode* node){
         else emit(OP_FALSE);
     }
     else if (auto* s = dynamic_cast<StringExpr*>(node)) {
-        emitConstant(s->value);
+        const std::string& str = s->value;
+        bool hasInterpolation = (str.find('{') != std::string::npos);
+        if (!hasInterpolation) {
+            emitConstant(str);
+        } else {
+            int partCount = 0;
+            size_t i = 0;
+            while (i < str.length()) {
+                if (str[i] == '{') {
+                    size_t j = i + 1;
+                    while (j < str.length() && str[j] != '}') j++;
+                    if (j < str.length()) {
+                        std::string exprStr = str.substr(i + 1, j - i - 1);
+                        // Lex and parse the expression, then compile it
+                        Lexer lexer(exprStr);
+                        auto tokens = lexer.tokenize();
+                        Parser parser(tokens);
+                        auto expr = parser.parseExpression();
+                        compileExpr(expr.get());
+                        partCount++;
+                        i = j + 1;
+                        continue;
+                    }
+                }
+                // Collect literal segment
+                std::string literal;
+                while (i < str.length() && str[i] != '{') {
+                    literal += str[i];
+                    i++;
+                }
+                if (!literal.empty()) {
+                    emitConstant(literal);
+                    partCount++;
+                }
+            }
+            // Concatenate all parts with OP_ADD
+            for (int p = 1; p < partCount; p++) {
+                emit(OP_ADD);
+            }
+        }
     }
     else if (auto* var = dynamic_cast<VarExpr*>(node)) {
         int arg = resolveLocal(var->name);
@@ -174,17 +214,51 @@ void Compiler::compileExpr(ASTNode* node){
         }
     }
     else if (auto* call = dynamic_cast<CallExpr*>(node)) {
-        // Compile the callee (pushes FunctionObject* onto stack)
+        // Check for built-in: fixed(size) or fixed(size, init)
+        if (auto* calleeName = dynamic_cast<VarExpr*>(call->callee.get())) {
+            if (calleeName->name == "fixed") {
+                for (const auto& arg : call->arguments) {
+                    compileExpr(arg.get());
+                }
+                emit(OP_FIXED_ARRAY);
+                emit(static_cast<uint8_t>(call->arguments.size()));
+                return;
+            }
+        }
+
+        // Check for built-in: arr.push(val)
+        if (auto* mem = dynamic_cast<MemberExpr*>(call->callee.get())) {
+            if (mem->name == "push") {
+                compileExpr(mem->object.get());  // push the array
+                for (const auto& arg : call->arguments) {
+                    compileExpr(arg.get());
+                }
+                emit(OP_ARRAY_PUSH);
+                return;
+            }
+        }
+
+        // Generic function call
         compileExpr(call->callee.get());
 
-        // Compile each argument
         for (const auto& arg : call->arguments) {
             compileExpr(arg.get());
         }
 
-        // Emit OP_CALL with the argument count
         emit(OP_CALL);
         emit(static_cast<uint8_t>(call->arguments.size()));
+    }
+    else if (auto* arr = dynamic_cast<ArrayExpr*>(node)) {
+        for (const auto& el : arr->elements) {
+            compileExpr(el.get());
+        }
+        emit(OP_NEW_ARRAY);
+        emit(static_cast<uint8_t>(arr->elements.size()));
+    }
+    else if (auto* idx = dynamic_cast<IndexExpr*>(node)) {
+        compileExpr(idx->array.get());
+        compileExpr(idx->index.get());
+        emit(OP_INDEX_GET);
     }
     else if (auto* bin = dynamic_cast<BinaryExpr*>(node)) {
 
@@ -248,6 +322,10 @@ void Compiler::compileStmt(ASTNode* node) {
     if (auto* printStmt = dynamic_cast<PrintStmt*>(node)) {
         compileExpr(printStmt->expression.get());
         emit(OP_PRINT);
+    }
+    else if (auto* printlnStmt = dynamic_cast<PrintlnStmt*>(node)) {
+        compileExpr(printlnStmt->expression.get());
+        emit(OP_PRINTLN);
     }
     else if (auto* exprStmt = dynamic_cast<ExprStmt*>(node)) {
         compileExpr(exprStmt->expression.get());
@@ -399,6 +477,12 @@ void Compiler::compileStmt(ASTNode* node) {
                     emit(arg);
                     emit(OP_POP);
                 }
+            }
+            else if (auto* idx = dynamic_cast<IndexExpr*>(assign.target.get())) {
+                compileExpr(idx->array.get());
+                compileExpr(idx->index.get());
+                compileExpr(assign.value.get());
+                emit(OP_INDEX_SET);
             }
         }
     }

@@ -8,17 +8,18 @@
         print(arr[2]);
         print(arr[3]);
         print(arr[4]);
-
+        println("");
         brr = fixed(5); // size cannot be increased . fixed(size)
         for(i = 0; i < 5; i = i + 1){
             brr[i] = i;
-            print(brr[i]);
+            print("{brr[i]} ");
         }   
+        println("");
         crr =[]; // empty dynamic array
 
         for(i = 0; i < 5; i = i + 1){
             crr.push(i);
-            print(crr[i]);
+            print("{crr[i]} ");
         }
         drr = fixed(5,0); // array of size 5,initised with 0 . fixed(size,initised_ele)
         n = 10;
@@ -27,7 +28,7 @@
         multidim3 = [fixed(n,[fixed(n,[fixed(n)])])]; // 3d array n*n*n
         multidim4 = []; // can add anything an array , and array of array truly dynamic
         ele = 0;
-        print("multi dimension1");
+        print("multi dimension1 ");
         for(i=0;i<n; i+=1){
             for(j = 0 ; j <n; j+=1){
                 multidim2[i][j] = ele;
@@ -36,8 +37,9 @@
         }
         for(i=0;i<n;i=i+1){
             for(j=0;j<n;j=j+1){
-                print(multidim2[i][j]);
+                print("{multidim2[i][j]} ");
             }
+            println("");
         }
         print("multi dimension2");
         ele = 0;
@@ -49,12 +51,14 @@
                 }
             }
         }
+        println("multi dimension3");
         for(i=0;i<n;i=i+1){
             for(j=0;j<n;j=j+1){
                 for(k=0;k<n;k=k+1){
-                    print(multidim3[i][j][k]);
+                    print("{multidim3[i][j][k]} ");
                 }
             }
+            println("");
         }
         
     }

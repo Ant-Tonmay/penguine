@@ -50,7 +50,13 @@ enum OpCode {
     OP_JUMP_IF_FALSE,
     OP_LOOP,
     OP_RETURN,
-    OP_CALL
+    OP_CALL,
+    OP_NEW_ARRAY,
+    OP_INDEX_GET,
+    OP_INDEX_SET,
+    OP_FIXED_ARRAY,
+    OP_ARRAY_PUSH,
+    OP_PRINTLN
 };
 
 }

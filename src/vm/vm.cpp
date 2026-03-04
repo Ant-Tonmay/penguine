@@ -35,6 +35,54 @@ inline bool as_bool(const Value& v) {
     return false;
 }
 
+inline std::string valueToString(const Value& val) {
+    if (std::holds_alternative<int>(val)) {
+        return std::to_string(std::get<int>(val));
+    } else if (std::holds_alternative<bool>(val)) {
+        return std::get<bool>(val) ? "true" : "false";
+    } else if (std::holds_alternative<std::string>(val)) {
+        return std::get<std::string>(val);
+    } else if (std::holds_alternative<double>(val)) {
+        std::string str = std::to_string(std::get<double>(val));
+        str.erase(str.find_last_not_of('0') + 1, std::string::npos);
+        if (str.back() == '.') str.pop_back();
+        return str;
+    } else if (std::holds_alternative<float>(val)) {
+        std::string str = std::to_string(std::get<float>(val));
+        str.erase(str.find_last_not_of('0') + 1, std::string::npos);
+        if (str.back() == '.') str.pop_back();
+        return str;
+    } else if (std::holds_alternative<long>(val)) {
+        return std::to_string(std::get<long>(val));
+    } else if (std::holds_alternative<long long>(val)) {
+        return std::to_string(std::get<long long>(val));
+    } else if (std::holds_alternative<char>(val)) {
+        return std::string(1, std::get<char>(val));
+    } else if (std::holds_alternative<ArrayObject*>(val)) {
+        auto arr = std::get<ArrayObject*>(val);
+        return "[Array length=" + std::to_string(arr->length) + "]";
+    } else if (std::holds_alternative<std::monostate>(val)) {
+        return "null";
+    }
+    return "";
+}
+
+Value deepCopyIfNeeded(const Value& v) {
+    if (std::holds_alternative<ArrayObject*>(v)) {
+        ArrayObject* original = std::get<ArrayObject*>(v);
+        ArrayObject* copy = new ArrayObject();
+        copy->length = original->length;
+        copy->capacity = original->capacity;
+        copy->isFixed = original->isFixed;
+        copy->data = new Value[copy->capacity];
+        for (size_t i = 0; i < copy->length; ++i) {
+             copy->data[i] = deepCopyIfNeeded(original->data[i]);
+        }
+        return copy;
+    }
+    return v;
+}
+
 void VM::run(FunctionObject* script){
 
     frames.push_back({script, 0, 0});
@@ -83,9 +131,18 @@ void VM::run(FunctionObject* script){
 
             case OP_ADD:
             case OP_PLUS_EQUAL: {
-                double b = as_double(pop());
-                double a = as_double(pop());
-                push(a+b);
+                Value bVal = pop();
+                Value aVal = pop();
+                
+                if (std::holds_alternative<std::string>(aVal) || std::holds_alternative<std::string>(bVal)) {
+                    std::string aStr = valueToString(aVal);
+                    std::string bStr = valueToString(bVal);
+                    push(aStr + bStr);
+                } else {
+                    double b = as_double(bVal);
+                    double a = as_double(aVal);
+                    push(a+b);
+                }
                 break;
             }
             case OP_SUB:
@@ -242,13 +299,13 @@ void VM::run(FunctionObject* script){
 
             case OP_PRINT:{
                 auto v = pop();
-                if (std::holds_alternative<bool>(v)) {
-                    std::cout << (std::get<bool>(v) ? "true" : "false") << std::endl;
-                } else if (std::holds_alternative<std::string>(v)) {
-                    std::cout << std::get<std::string>(v) << std::endl;
-                } else {
-                    std::cout << as_double(v) << std::endl;
-                }
+                std::cout << valueToString(v);
+                break;
+            }
+            
+            case OP_PRINTLN:{
+                auto v = pop();
+                std::cout << valueToString(v) << std::endl;
                 break;
             }
 
@@ -297,6 +354,122 @@ void VM::run(FunctionObject* script){
 
                 // Push the return value
                 push(result);
+                break;
+            }
+
+            case OP_NEW_ARRAY: {
+                uint8_t count = frame.function->chunk.code[frame.ip++];
+                
+                // Collect elements
+                std::vector<Value> elements(count);
+                for (int i = count - 1; i >= 0; i--) {
+                    elements[i] = pop();
+                }
+                
+                // Auto-unwrap single array elements
+                if (count == 1 && std::holds_alternative<ArrayObject*>(elements[0])) {
+                    push(elements[0]);
+                    break;
+                }
+                
+                ArrayObject* arr = new ArrayObject();
+                arr->length = count;
+                arr->capacity = count;
+                arr->data = new Value[count];
+                for (int i = 0; i < count; i++) {
+                    arr->data[i] = elements[i];
+                }
+                push(arr);
+                break;
+            }
+
+            case OP_INDEX_GET: {
+                Value idxVal = pop();
+                Value arrVal = pop();
+                if (!std::holds_alternative<ArrayObject*>(arrVal)) {
+                    std::cerr << "Runtime error: index operation expects an array." << std::endl;
+                    return;
+                }
+                ArrayObject* arr = std::get<ArrayObject*>(arrVal);
+                int i = as_int(idxVal);
+                if (i < 0 || (size_t)i >= arr->length) {
+                    std::cerr << "Runtime error: array index " << i << " out of bounds (length " << arr->length << ")." << std::endl;
+                    return;
+                }
+                push(arr->data[i]);
+                break;
+            }
+
+            case OP_INDEX_SET: {
+                Value val = pop();
+                Value idxVal = pop();
+                Value arrVal = pop();
+                if (!std::holds_alternative<ArrayObject*>(arrVal)) {
+                    std::cerr << "Runtime error: index operation expects an array." << std::endl;
+                    return;
+                }
+                ArrayObject* arr = std::get<ArrayObject*>(arrVal);
+                int i = as_int(idxVal);
+                if (i < 0 || (size_t)i >= arr->length) {
+                    std::cerr << "Runtime error: array index " << i << " out of bounds (length " << arr->length << ")." << std::endl;
+                    return;
+                }
+                arr->data[i] = val;
+                break;
+            }
+
+            case OP_FIXED_ARRAY: {
+                uint8_t argCount = frame.function->chunk.code[frame.ip++];
+                Value initVal = std::monostate{};
+                if (argCount == 2) {
+                    initVal = pop();
+                    // Auto-unwrap single-element array for initVal matching interpreter
+                    if (std::holds_alternative<ArrayObject*>(initVal)) {
+                        ArrayObject* initArr = std::get<ArrayObject*>(initVal);
+                        if (initArr->length == 1) {
+                            initVal = initArr->data[0];
+                        }
+                    }
+                }
+                int size = as_int(pop());
+                if (size < 0) {
+                    std::cerr << "Runtime error: fixed() size cannot be negative." << std::endl;
+                    return;
+                }
+                ArrayObject* arr = new ArrayObject();
+                arr->isFixed = true;
+                arr->length = size;
+                arr->capacity = size;
+                arr->data = new Value[size];
+                for (int i = 0; i < size; ++i) {
+                    arr->data[i] = deepCopyIfNeeded(initVal);
+                }
+                push(arr);
+                break;
+            }
+
+            case OP_ARRAY_PUSH: {
+                Value val = pop();
+                Value arrVal = pop();
+                if (!std::holds_alternative<ArrayObject*>(arrVal)) {
+                    std::cerr << "Runtime error: push expects an array." << std::endl;
+                    return;
+                }
+                ArrayObject* arr = std::get<ArrayObject*>(arrVal);
+                if (arr->isFixed) {
+                    std::cerr << "Runtime error: Cannot push to fixed array." << std::endl;
+                    return;
+                }
+                if (arr->length == arr->capacity) {
+                    size_t newCap = arr->capacity == 0 ? 4 : arr->capacity * 2;
+                    Value* newData = new Value[newCap];
+                    for (size_t i = 0; i < arr->length; ++i) newData[i] = arr->data[i];
+                    if (arr->data) delete[] arr->data;
+                    arr->data = newData;
+                    arr->capacity = newCap;
+                }
+                arr->data[arr->length++] = val;
+                push(std::monostate{});
                 break;
             }
 
