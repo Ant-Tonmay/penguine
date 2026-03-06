@@ -61,6 +61,15 @@ inline std::string valueToString(const Value& val) {
     } else if (std::holds_alternative<ArrayObject*>(val)) {
         auto arr = std::get<ArrayObject*>(val);
         return "[Array length=" + std::to_string(arr->length) + "]";
+    } else if (std::holds_alternative<ClassObject*>(val)) {
+        auto cls = std::get<ClassObject*>(val);
+        return "<class " + cls->name + ">";
+    } else if (std::holds_alternative<InstanceObject*>(val)) {
+        auto inst = std::get<InstanceObject*>(val);
+        return "<" + inst->klass->name + " instance>";
+    } else if (std::holds_alternative<BoundMethod*>(val)) {
+        auto bm = std::get<BoundMethod*>(val);
+        return "<bound method " + bm->method->name + ">";
     } else if (std::holds_alternative<std::monostate>(val)) {
         return "null";
     }
@@ -315,6 +324,60 @@ void VM::run(FunctionObject* script){
                 // callee is at stack[top - argCount - 1]
                 Value calleeVal = stack[stack.size() - argCount - 1];
 
+                if (std::holds_alternative<ClassObject*>(calleeVal)) {
+                    ClassObject* klass = std::get<ClassObject*>(calleeVal);
+                    InstanceObject* instance = new InstanceObject(klass);
+                    
+                    
+                    if (klass->methods.count(klass->name)) {
+                        Value initMethodVal = klass->methods[klass->name];
+                        if (std::holds_alternative<FunctionObject*>(initMethodVal)) {
+                            FunctionObject* initMethod = std::get<FunctionObject*>(initMethodVal);
+                            
+                            // Replace the class object with the instance so `this` is correctly positioned
+                            stack[stack.size() - argCount - 1] = instance;
+                            
+                            // A method has `arity` which INCLUDES `this`. So `arity - 1` is the number of explicitly passed arguments.
+                            if (argCount != initMethod->arity - 1) { 
+                                std::cerr << "Runtime error: expected " << initMethod->arity - 1
+                                          << " arguments for constructor but got " << (int)argCount << std::endl;
+                                return;
+                            }
+                            
+                            // Base points to `this` (which took place of callee)
+                            size_t base = stack.size() - argCount - 1;
+                            frames.push_back({initMethod, 0, base});
+                            break;
+                        }
+                    } else if (argCount != 0) {
+                        std::cerr << "Runtime error: expected 0 arguments for default constructor but got " << (int)argCount << std::endl;
+                        return;
+                    }
+                    
+                    for (int i=0; i < argCount; i++) pop();
+                    pop(); // pop class
+                    push(instance);
+                    break;
+                }
+                
+                if (std::holds_alternative<BoundMethod*>(calleeVal)) {
+                    BoundMethod* bound = std::get<BoundMethod*>(calleeVal);
+                    
+                    // Replace the bound method on stack with the instance (`this`)
+                    stack[stack.size() - argCount - 1] = bound->instance;
+                    
+                    if (argCount != bound->method->arity - 1) { // -1 for `this`
+                        std::cerr << "Runtime error: expected " << bound->method->arity - 1
+                                  << " arguments for method but got " << (int)argCount << std::endl;
+                        return;
+                    }
+                    
+                    // Base points to the callee slot (`this`), which is slot 0
+                    size_t base = stack.size() - argCount - 1;
+                    frames.push_back({bound->method, 0, base});
+                    break;
+                }
+
                 if (!std::holds_alternative<FunctionObject*>(calleeVal)) {
                     std::cerr << "Runtime error: tried to call a non-function" << std::endl;
                     return;
@@ -323,14 +386,14 @@ void VM::run(FunctionObject* script){
                 FunctionObject* callee = std::get<FunctionObject*>(calleeVal);
 
                 if (argCount != callee->arity) {
-                    std::cerr << "Runtime error: expected " << callee->arity 
+                    std::cerr << "Runtime error: in function " << callee->name << " expected " << callee->arity 
                               << " arguments but got " << (int)argCount << std::endl;
                     return;
                 }
 
                 // Push a new call frame
-                // base points to the first argument (callee is at base - 1)
-                size_t base = stack.size() - argCount;
+                // base points to the callee, which is always at stack.size() - argCount - 1
+                size_t base = stack.size() - argCount - 1;
                 frames.push_back({callee, 0, base});
                 break;
             }
@@ -348,9 +411,7 @@ void VM::run(FunctionObject* script){
                     return;
                 }
 
-                // Discard the called function's locals, args, and the callee slot
-                // Stack should be truncated to base - 1 (removing callee too)
-                stack.resize(base - 1);
+                stack.resize(base);
 
                 // Push the return value
                 push(result);
@@ -470,6 +531,128 @@ void VM::run(FunctionObject* script){
                 }
                 arr->data[arr->length++] = val;
                 push(std::monostate{});
+                break;
+            }
+
+            case OP_ARRAY_LENGTH: {
+                Value arrVal = pop();
+                if (!std::holds_alternative<ArrayObject*>(arrVal)) {
+                    std::cerr << "Runtime error: length() expects an array." << std::endl;
+                    return;
+                }
+                ArrayObject* arr = std::get<ArrayObject*>(arrVal);
+                push((double)arr->length);
+                break;
+            }
+
+            case OP_CLASS: {
+                uint8_t nameIdx = frame.function->chunk.code[frame.ip++];
+                std::string name = std::get<std::string>(frame.function->chunk.constants[nameIdx]);
+                ClassObject* klass = new ClassObject(name);
+                push(klass);
+                break;
+            }
+
+            case OP_METHOD: {
+                uint8_t nameIdx = frame.function->chunk.code[frame.ip++];
+                std::string name = std::get<std::string>(frame.function->chunk.constants[nameIdx]);
+                Value methodVal = pop();
+                Value klassVal = stack.back(); // peek
+                
+                if (!std::holds_alternative<ClassObject*>(klassVal)) {
+                    std::cerr << "Runtime error: OP_METHOD expects class on stack." << std::endl;
+                    return;
+                }
+                
+                ClassObject* klass = std::get<ClassObject*>(klassVal);
+                klass->methods[name] = methodVal;
+                break;
+            }
+
+            case OP_GET_PROPERTY: {
+                uint8_t nameIdx = frame.function->chunk.code[frame.ip++];
+                std::string name = std::get<std::string>(frame.function->chunk.constants[nameIdx]);
+                Value objVal = pop();
+                
+                if (!std::holds_alternative<InstanceObject*>(objVal)) {
+                    std::cerr << "Runtime error: OP_GET_PROPERTY expects an instance. Got: " << valueToString(objVal) << std::endl;
+                    return;
+                }
+                
+                InstanceObject* instance = std::get<InstanceObject*>(objVal);
+                
+                if (instance->fields.count(name)) {
+                    push(instance->fields[name]);
+                } else if (instance->klass->methods.count(name)) {
+                    Value methodVal = instance->klass->methods[name];
+                    BoundMethod* bound = new BoundMethod(instance, std::get<FunctionObject*>(methodVal));
+                    push(bound);
+                } else {
+                    std::cerr << "Runtime error: Undefined property '" << name << "'." << std::endl;
+                    return;
+                }
+                break;
+            }
+            
+            case OP_SET_PROPERTY: {
+                uint8_t nameIdx = frame.function->chunk.code[frame.ip++];
+                std::string name = std::get<std::string>(frame.function->chunk.constants[nameIdx]);
+                Value value = pop();
+                Value objVal = pop();
+                
+                if (!std::holds_alternative<InstanceObject*>(objVal)) {
+                    std::cerr << "Runtime error: OP_SET_PROPERTY expects an instance." << std::endl;
+                    return;
+                }
+                
+                InstanceObject* instance = std::get<InstanceObject*>(objVal);
+                instance->fields[name] = value;
+                push(value); // assignment returns the assigned value
+                break;
+            }
+
+            case OP_GET_PROPERTY_OR_GLOBAL: {
+                uint8_t nameIdx = frame.function->chunk.code[frame.ip++];
+                std::string name = std::get<std::string>(frame.function->chunk.constants[nameIdx]);
+                Value objVal = pop();
+                
+                if (std::holds_alternative<InstanceObject*>(objVal)) {
+                    InstanceObject* instance = std::get<InstanceObject*>(objVal);
+                    
+                    if (instance->fields.count(name)) {
+                        push(instance->fields[name]);
+                        break;
+                    } else if (instance->klass->methods.count(name)) {
+                        Value methodVal = instance->klass->methods[name];
+                        BoundMethod* bound = new BoundMethod(instance, std::get<FunctionObject*>(methodVal));
+                        push(bound);
+                        break;
+                    }
+                }
+                
+                // Fallback to global. (If objVal wasn't an InstanceObject, we just ignore it and check globals.
+                // In a stricter implementation, we'd ensure it fell back cleanly, but popping it is fine here)
+                push(globals[name]);
+                break;
+            }
+
+            case OP_SET_PROPERTY_OR_LOCAL: {
+                uint8_t nameIdx = frame.function->chunk.code[frame.ip++];
+                std::string name = std::get<std::string>(frame.function->chunk.constants[nameIdx]);
+                Value objVal = pop(); 
+                Value value = pop();
+                
+                if (std::holds_alternative<InstanceObject*>(objVal)) {
+                    InstanceObject* instance = std::get<InstanceObject*>(objVal);
+                    // It's an implicit `this.` assignment
+                    instance->fields[name] = value;
+                    push(value);
+                } else {
+                    // Fallback to global variable assignment
+                    // Since it wasn't recognized as `this`, we set the global variable
+                    globals[name] = value;
+                    push(value);
+                }
                 break;
             }
 

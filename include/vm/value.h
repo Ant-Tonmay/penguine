@@ -62,6 +62,20 @@ struct ObjectObject {
     std::unordered_map<std::string, Value> fields;
 };
 
+struct ClassObject {
+    std::string name;
+    std::unordered_map<std::string, Value> methods;
+    
+    ClassObject(const std::string& name) : name(name) {}
+};
+
+struct InstanceObject {
+    ClassObject* klass;
+    std::unordered_map<std::string, Value> fields;
+    
+    InstanceObject(ClassObject* klass) : klass(klass) {}
+};
+
 struct ArrayObject {
     bool isFixed;
     size_t length;
@@ -78,15 +92,19 @@ struct ArrayObject {
 struct FunctionObject {
     std::string name;
     int arity;
+    bool isMethod;
     Chunk chunk;
 
-    FunctionObject(const std::string& name, int arity)
-        : name(name), arity(arity) {}
+    FunctionObject(const std::string& name, int arity, bool isMethod = false)
+        : name(name), arity(arity), isMethod(isMethod) {}
 };
 
 struct BoundMethod {
     InstanceObject* instance;
-    std::string methodName;
+    FunctionObject* method;
+
+    BoundMethod(InstanceObject* instance, FunctionObject* method)
+        : instance(instance), method(method) {}
 };
 
 }

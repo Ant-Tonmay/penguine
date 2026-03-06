@@ -93,7 +93,9 @@ int main(int argc, char* argv[]) {
              vm::VM vmInstance;
              // Register all compiled functions as globals
              for (auto* fn : compiler.compiledFunctions) {
-                 vmInstance.globals[fn->name] = fn;
+                 if (!fn->isMethod) {
+                     vmInstance.globals[fn->name] = fn;
+                 }
              }
              vmInstance.run(script);
         } else {

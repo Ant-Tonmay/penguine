@@ -91,6 +91,8 @@ void Compiler::compileFunction(Function* func) {
     // Begin scope for function body
     beginScope();
 
+    addLocal(""); // Reserve slot 0 for callee
+
     for (const auto& param : func->params) {
         addLocal(param.name);
     }
@@ -123,6 +125,10 @@ FunctionObject* Compiler::compile(ASTNode* node) {
         currentFunction = scriptFn;
         locals.clear();
         scopeDepth = 0;
+
+        for (const auto& cls : program->classes) {
+            compileStmt(cls.get());
+        }
 
         bool foundMain = false;
         for (const auto& func : program->functions) {
@@ -207,10 +213,20 @@ void Compiler::compileExpr(ASTNode* node){
             emit(OP_GET_LOCAL);
             emit(arg);
         } else {
+    
+            int thisArg = resolveLocal("this");
             Value nameVal = var->name;
             int idx = currentChunk().addConstant(nameVal);
-            emit(OP_GET_GLOBAL);
-            emit(idx);
+            
+            if (thisArg != -1) {
+                emit(OP_GET_LOCAL);
+                emit(thisArg);
+                emit(OP_GET_PROPERTY_OR_GLOBAL);
+                emit(idx);
+            } else {
+                emit(OP_GET_GLOBAL);
+                emit(idx);
+            }
         }
     }
     else if (auto* call = dynamic_cast<CallExpr*>(node)) {
@@ -222,6 +238,20 @@ void Compiler::compileExpr(ASTNode* node){
                 }
                 emit(OP_FIXED_ARRAY);
                 emit(static_cast<uint8_t>(call->arguments.size()));
+                return;
+            }
+            if (calleeName->name == "push") {
+                for (const auto& arg : call->arguments) {
+                    compileExpr(arg.get());
+                }
+                emit(OP_ARRAY_PUSH);
+                return;
+            }
+            if (calleeName->name == "length") {
+                for (const auto& arg : call->arguments) {
+                    compileExpr(arg.get());
+                }
+                emit(OP_ARRAY_LENGTH);
                 return;
             }
         }
@@ -236,6 +266,21 @@ void Compiler::compileExpr(ASTNode* node){
                 emit(OP_ARRAY_PUSH);
                 return;
             }
+            
+            // Method call on an object
+            compileExpr(mem->object.get()); // push the object
+            int nameIdx = currentChunk().addConstant(mem->name);
+            emit(OP_GET_PROPERTY);
+            emit(nameIdx);
+            
+            // push arguments
+            for (const auto& arg : call->arguments) {
+                compileExpr(arg.get());
+            }
+
+            emit(OP_CALL);
+            emit(static_cast<uint8_t>(call->arguments.size()));
+            return;
         }
 
         // Generic function call
@@ -315,6 +360,12 @@ void Compiler::compileExpr(ASTNode* node){
         else if (bin->op == "&=") emit(OP_BITWISE_AND_EQUAL);
         else if (bin->op == "|=") emit(OP_BITWISE_OR_EQUAL);
         else if (bin->op == "^=") emit(OP_XOR_EQUAL);
+    }
+    else if (auto* mem = dynamic_cast<MemberExpr*>(node)) {
+        compileExpr(mem->object.get());
+        int nameIdx = currentChunk().addConstant(mem->name);
+        emit(OP_GET_PROPERTY);
+        emit(nameIdx);
     }
 }
 
@@ -430,7 +481,44 @@ void Compiler::compileStmt(ASTNode* node) {
                 bool isNewLocal = false;
 
                 if (arg == -1 && scopeDepth > 0) {
-                     // Inside a function, any assignment to an unknown variable becomes a new local!
+                     int thisArg = resolveLocal("this");
+                     if (thisArg != -1) {
+                        
+                         Value nameVal = var->name;
+                         int idx = currentChunk().addConstant(nameVal);
+                         
+                         compileExpr(assign.value.get());
+                         
+                         if (assign.op != TokenType::EQUAL) {
+                              
+                              emit(OP_GET_LOCAL);
+                              emit(thisArg);
+                              emit(OP_GET_PROPERTY_OR_GLOBAL);
+                              emit(idx);
+                              
+                              switch(assign.op) {
+                                  case TokenType::PLUS_EQUAL: emit(OP_PLUS_EQUAL); break;
+                                  case TokenType::MINUS_EQUAL: emit(OP_MINUS_EQUAL); break;
+                                  case TokenType::STAR_EQUAL: emit(OP_MULTIPLY_EQUAL); break;
+                                  case TokenType::SLASH_EQUAL: emit(OP_DIVIDE_EQUAL); break;
+                                  case TokenType::MOD_OP_EQUAL: emit(OP_MODULO_EQUAL); break;
+                                  case TokenType::BITWISE_AND_EQUAL: emit(OP_BITWISE_AND_EQUAL); break;
+                                  case TokenType::BITWISE_OR_EQUAL: emit(OP_BITWISE_OR_EQUAL); break;
+                                  case TokenType::XOR_EQUAL: emit(OP_XOR_EQUAL); break;
+                                  default: break;
+                              }
+                         }
+
+                         emit(OP_GET_LOCAL);
+                         emit(thisArg);
+                         emit(OP_SET_PROPERTY_OR_LOCAL);
+                         emit(idx);
+                         
+                         // Not a new local, handled exclusively via property binding. Continue to next assignment
+                         continue;
+                     }
+                     
+                     // Inside a function, any assignment to an unknown variable becomes a new local
                      addLocal(var->name);
                      arg = locals.size() - 1;
                      isNewLocal = true;
@@ -484,6 +572,18 @@ void Compiler::compileStmt(ASTNode* node) {
                 compileExpr(assign.value.get());
                 emit(OP_INDEX_SET);
             }
+            else if (auto* mem = dynamic_cast<MemberExpr*>(assign.target.get())) {
+                compileExpr(mem->object.get()); // The object
+                compileExpr(assign.value.get()); // The value
+                int nameIdx = currentChunk().addConstant(mem->name);
+                
+                if (assign.op != TokenType::EQUAL) {
+                    // Eat Five star , Do Nothing for now (For now)
+                }
+
+                emit(OP_SET_PROPERTY);
+                emit(nameIdx);
+            }
         }
     }
     else if (auto* block = dynamic_cast<Block*>(node)) {
@@ -515,6 +615,82 @@ void Compiler::compileStmt(ASTNode* node) {
     else if (dynamic_cast<Expr*>(node)) {
         compileExpr(node);
         emit(OP_POP);
+    }
+    else if (auto* classStmt = dynamic_cast<ClassStmt*>(node)) {
+        int nameIdx = currentChunk().addConstant(classStmt->name);
+        emit(OP_CLASS);
+        emit(nameIdx);
+
+        // Define class locally or globally
+        int arg = resolveLocal(classStmt->name);
+        bool isLocal = true;
+        if (arg == -1 && scopeDepth > 0) {
+            addLocal(classStmt->name);
+            arg = locals.size() - 1;
+        } else if (arg == -1 && scopeDepth == 0) {
+            isLocal = false;
+            arg = currentChunk().addConstant(classStmt->name);
+        }
+
+        if (isLocal) {
+            emit(OP_SET_LOCAL);
+            emit(arg);
+        } else {
+            emit(OP_SET_GLOBAL);
+            emit(arg);
+        }
+        // DO NOT POP the class from the stack yet, we need it to bind methods
+        
+        for (const auto& section : classStmt->sections) {
+            for (const auto& member : section->members) {
+                if (auto* method = dynamic_cast<MethodDef*>(member.get())) {
+                    
+                    Function func(method->name, method->params, std::make_unique<Block>());
+                    
+                    auto* fnObj = new FunctionObject(method->name, method->params.size() + 1, true);
+                    FunctionObject* enclosingFunction = currentFunction;
+                    std::vector<Local> enclosingLocals = std::move(locals);
+                    int enclosingScopeDepth = scopeDepth;
+                    
+                    currentFunction = fnObj;
+                    locals.clear();
+                    scopeDepth = 0;
+                    
+                    beginScope();
+                    addLocal("this"); // implicit first parameter
+                    for (const auto& param : method->params) {
+                        addLocal(param.name);
+                    }
+                    
+                    for (const auto& stmt : method->body->statements) {
+                        compileStmt(stmt.get());
+                    }
+                    
+                    // For constructors, we strictly want to return `this`
+                    if (method->name == classStmt->name) {
+                        emit(OP_GET_LOCAL);
+                        emit(0); // `this` is slot 0
+                    } else {
+                        emit(OP_NULL); // Standard methods return null implicitly
+                    }
+                    emit(OP_RETURN);
+                    
+                    currentFunction = enclosingFunction;
+                    locals = std::move(enclosingLocals);
+                    scopeDepth = enclosingScopeDepth;
+                    
+                    compiledFunctions.push_back(fnObj);
+                    
+                    // Now bind it
+                    emitConstant(fnObj); // push the method function
+                    int methodNameIdx = currentChunk().addConstant(method->name);
+                    emit(OP_METHOD);
+                    emit(methodNameIdx);
+                }
+            }
+        }
+        
+        emit(OP_POP); // Pop the class after binding all methods
     }
 }
 
