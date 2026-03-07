@@ -22,13 +22,11 @@ struct BoundMethod;
 
 
 using Value = std::variant<
-    int,      
+    int64_t,      
     bool,
     char,
-    float,
     double,
-    long,
-    long long,
+    __int128,
     ArrayObject*,
     std::monostate,
     FunctionObject*,

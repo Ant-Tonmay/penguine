@@ -71,7 +71,7 @@ void test_classes() {
     fn.chunk.write(pIdx);
     
     // Value 10
-    int val10 = fn.chunk.addConstant(10);
+    int val10 = fn.chunk.addConstant((int64_t)10);
     fn.chunk.write(vm::OP_CONSTANT);
     fn.chunk.write(val10);
     

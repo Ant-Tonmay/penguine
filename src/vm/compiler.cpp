@@ -254,6 +254,41 @@ void Compiler::compileExpr(ASTNode* node){
                 emit(OP_ARRAY_LENGTH);
                 return;
             }
+            if(calleeName->name == "int"){
+                for (const auto& arg : call->arguments) {
+                    compileExpr(arg.get());
+                }
+                emit(OP_CAST_INT);
+                return;
+            }
+            if(calleeName->name == "float"){
+                for (const auto& arg : call->arguments) {
+                    compileExpr(arg.get());
+                }
+                emit(OP_CAST_FLOAT);
+                return;
+            }
+            if(calleeName->name == "string"){
+                for (const auto& arg : call->arguments) {
+                    compileExpr(arg.get());
+                }
+                emit(OP_CAST_STRING);
+                return;
+            }
+            if(calleeName->name == "bool"){
+                for (const auto& arg : call->arguments) {
+                    compileExpr(arg.get());
+                }
+                emit(OP_CAST_BOOL);
+                return;
+            }
+            if(calleeName->name == "char"){
+                for (const auto& arg : call->arguments) {
+                    compileExpr(arg.get());
+                }
+                emit(OP_CAST_CHAR);
+                return;
+            }
         }
 
         // Check for built-in: arr.push(val)

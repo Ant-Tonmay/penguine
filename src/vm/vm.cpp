@@ -17,12 +17,12 @@ Value VM::pop(){
 inline double as_double(const Value& v) {
     if (std::holds_alternative<double>(v)) return std::get<double>(v);
     if (std::holds_alternative<bool>(v)) return std::get<bool>(v) ? 1.0 : 0.0;
-    if (std::holds_alternative<int>(v)) return (double)std::get<int>(v);
+    if (std::holds_alternative<int64_t>(v)) return (double)std::get<int64_t>(v);
     return 0.0;
 }
 
 inline int as_int(const Value& v) {
-    if (std::holds_alternative<int>(v)) return std::get<int>(v);
+    if (std::holds_alternative<int64_t>(v)) return std::get<int64_t>(v);
     if (std::holds_alternative<double>(v)) return (int)std::get<double>(v);
     if (std::holds_alternative<bool>(v)) return std::get<bool>(v) ? 1 : 0;
     return 0;
@@ -30,14 +30,14 @@ inline int as_int(const Value& v) {
 
 inline bool as_bool(const Value& v) {
     if (std::holds_alternative<bool>(v)) return std::get<bool>(v);
-    if (std::holds_alternative<int>(v)) return std::get<int>(v) != 0;
+    if (std::holds_alternative<int64_t>(v)) return std::get<int64_t>(v) != 0;
     if (std::holds_alternative<double>(v)) return std::get<double>(v) != 0.0;
     return false;
 }
 
 inline std::string valueToString(const Value& val) {
-    if (std::holds_alternative<int>(val)) {
-        return std::to_string(std::get<int>(val));
+    if (std::holds_alternative<int64_t>(val)) {
+        return std::to_string(std::get<int64_t>(val));
     } else if (std::holds_alternative<bool>(val)) {
         return std::get<bool>(val) ? "true" : "false";
     } else if (std::holds_alternative<std::string>(val)) {
@@ -47,15 +47,6 @@ inline std::string valueToString(const Value& val) {
         str.erase(str.find_last_not_of('0') + 1, std::string::npos);
         if (str.back() == '.') str.pop_back();
         return str;
-    } else if (std::holds_alternative<float>(val)) {
-        std::string str = std::to_string(std::get<float>(val));
-        str.erase(str.find_last_not_of('0') + 1, std::string::npos);
-        if (str.back() == '.') str.pop_back();
-        return str;
-    } else if (std::holds_alternative<long>(val)) {
-        return std::to_string(std::get<long>(val));
-    } else if (std::holds_alternative<long long>(val)) {
-        return std::to_string(std::get<long long>(val));
     } else if (std::holds_alternative<char>(val)) {
         return std::string(1, std::get<char>(val));
     } else if (std::holds_alternative<ArrayObject*>(val)) {
@@ -778,6 +769,78 @@ void VM::run(FunctionObject* script){
                 Value klassVal = stack.back();
                 ClassObject* klass = std::get<ClassObject*>(klassVal);
                 klass->fields[name] = static_cast<AccessModifier>(modifier);
+                break;
+            }
+            case OP_CAST_INT: {
+                Value v = pop();
+
+                if(std::holds_alternative<std::string>(v))
+                    push(Value((int64_t)std::stoll(std::get<std::string>(v))));
+                else if(std::holds_alternative<double>(v))
+                    push(Value((int64_t)std::get<double>(v)));
+                else if(std::holds_alternative<bool>(v))
+                    push(Value((int64_t)std::get<bool>(v)));
+                else if(std::holds_alternative<char>(v))
+                    push(Value((int64_t)std::get<char>(v)));
+                else
+                    push(v); // No-op for already int or unsupported
+
+                break;
+            }
+            case OP_CAST_FLOAT: {
+                Value v = pop();
+
+                if(std::holds_alternative<std::string>(v))
+                    push(Value((double)std::stod(std::get<std::string>(v))));
+                else if(std::holds_alternative<int64_t>(v))
+                    push(Value((double)std::get<int64_t>(v)));
+                else if(std::holds_alternative<bool>(v))
+                    push(Value((double)std::get<bool>(v)));
+                else if(std::holds_alternative<char>(v))
+                    push(Value((double)std::get<char>(v)));
+                else
+                    push(v); // No-op for already double or unsupported
+
+                break;
+            }
+            case OP_CAST_STRING: {
+                Value v = pop();
+
+                push(Value(valueToString(v)));
+
+                break;
+            }
+            case OP_CAST_BOOL: {
+                Value v = pop();
+
+                if(std::holds_alternative<int64_t>(v))
+                    push(Value((bool)std::get<int64_t>(v)));
+                else if(std::holds_alternative<double>(v))
+                    push(Value((bool)std::get<double>(v)));
+                else if(std::holds_alternative<std::string>(v))
+                    push(Value(!std::get<std::string>(v).empty()));
+                else if(std::holds_alternative<char>(v))
+                    push(Value((bool)std::get<char>(v)));
+                else
+                    push(v); // No-op for already bool or unsupported
+
+                break;
+            }
+            case OP_CAST_CHAR: {
+                Value v = pop();
+
+                if(std::holds_alternative<int64_t>(v))
+                    push(Value((char)std::get<int64_t>(v)));
+                else if(std::holds_alternative<double>(v))
+                    push(Value((char)std::get<double>(v)));
+                else if(std::holds_alternative<std::string>(v)) {
+                    std::string str = std::get<std::string>(v);
+                    push(Value((char)(str.empty() ? 0 : str[0])));
+                } else if(std::holds_alternative<bool>(v))
+                    push(Value((char)std::get<bool>(v)));
+                else
+                    push(v); // No-op for already char or unsupported
+
                 break;
             }
 
