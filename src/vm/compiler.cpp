@@ -639,11 +639,30 @@ void Compiler::compileStmt(ASTNode* node) {
             emit(OP_SET_GLOBAL);
             emit(arg);
         }
+        
+        if (!classStmt->parentName.empty()) {
+            int parentArg = resolveLocal(classStmt->parentName);
+            if (parentArg != -1) {
+                emit(OP_GET_LOCAL);
+                emit(parentArg);
+            } else {
+                int parentIdx = currentChunk().addConstant(classStmt->parentName);
+                emit(OP_GET_GLOBAL);
+                emit(parentIdx);
+            }
+            emit(OP_INHERIT);
+        }
         // DO NOT POP the class from the stack yet, we need it to bind methods
         
         for (const auto& section : classStmt->sections) {
             for (const auto& member : section->members) {
-                if (auto* method = dynamic_cast<MethodDef*>(member.get())) {
+                if (auto* field = dynamic_cast<FieldDecl*>(member.get())) {
+                    int fieldNameIdx = currentChunk().addConstant(field->name);
+                    emit(OP_FIELD);
+                    emit(fieldNameIdx);
+                    emit(static_cast<uint8_t>(section->modifier));
+                }
+                else if (auto* method = dynamic_cast<MethodDef*>(member.get())) {
                     
                     Function func(method->name, method->params, std::make_unique<Block>());
                     
@@ -686,6 +705,7 @@ void Compiler::compileStmt(ASTNode* node) {
                     int methodNameIdx = currentChunk().addConstant(method->name);
                     emit(OP_METHOD);
                     emit(methodNameIdx);
+                    emit(static_cast<uint8_t>(section->modifier));
                 }
             }
         }

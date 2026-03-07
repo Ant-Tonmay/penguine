@@ -12,7 +12,7 @@ Value VM::pop(){
     stack.pop_back();
     return v;
 }
-
+ 
 
 inline double as_double(const Value& v) {
     if (std::holds_alternative<double>(v)) return std::get<double>(v);
@@ -69,7 +69,8 @@ inline std::string valueToString(const Value& val) {
         return "<" + inst->klass->name + " instance>";
     } else if (std::holds_alternative<BoundMethod*>(val)) {
         auto bm = std::get<BoundMethod*>(val);
-        return "<bound method " + bm->method->name + ">";
+        std::string mName = !bm->methods.empty() ? bm->methods[0]->name : "unknown";
+        return "<bound method " + mName + ">";
     } else if (std::holds_alternative<std::monostate>(val)) {
         return "null";
     }
@@ -90,6 +91,28 @@ Value deepCopyIfNeeded(const Value& v) {
         return copy;
     }
     return v;
+}
+
+static bool checkAccess(ClassObject* owner, ClassObject* context, AccessModifier access) {
+    if (access == AccessModifier::PUBLIC) return true;
+    if (access == AccessModifier::PRIVATE) {
+        return context == owner;
+    }
+    if (access == AccessModifier::PROTECTED) {
+        if (!context) return false;
+        ClassObject* curr = context;
+        while (curr != nullptr) {
+            if (curr == owner) return true;
+            curr = curr->parent;
+        }
+        curr = owner;
+        while (curr != nullptr) {
+            if (curr == context) return true;
+            curr = curr->parent;
+        }
+        return false;
+    }
+    return false;
 }
 
 void VM::run(FunctionObject* script){
@@ -330,25 +353,23 @@ void VM::run(FunctionObject* script){
                     
                     
                     if (klass->methods.count(klass->name)) {
-                        Value initMethodVal = klass->methods[klass->name];
-                        if (std::holds_alternative<FunctionObject*>(initMethodVal)) {
-                            FunctionObject* initMethod = std::get<FunctionObject*>(initMethodVal);
-                            
-                            // Replace the class object with the instance so `this` is correctly positioned
-                            stack[stack.size() - argCount - 1] = instance;
-                            
-                            // A method has `arity` which INCLUDES `this`. So `arity - 1` is the number of explicitly passed arguments.
-                            if (argCount != initMethod->arity - 1) { 
-                                std::cerr << "Runtime error: expected " << initMethod->arity - 1
-                                          << " arguments for constructor but got " << (int)argCount << std::endl;
-                                return;
+                        auto& initMethods = klass->methods[klass->name];
+                        FunctionObject* matchingInit = nullptr;
+                        for (auto* func : initMethods) {
+                            if (argCount == func->arity - 1) { // -1 for `this`
+                                matchingInit = func;
+                                break;
                             }
-                            
-                            // Base points to `this` (which took place of callee)
+                        }
+                        
+                        if (matchingInit) {
+                            stack[stack.size() - argCount - 1] = instance;
                             size_t base = stack.size() - argCount - 1;
-                            frames.push_back({initMethod, 0, base});
+                            frames.push_back({matchingInit, 0, base});
                             break;
                         }
+                        std::cerr << "Runtime error: no matching constructor for " << (int)argCount << " arguments." << std::endl;
+                        return;
                     } else if (argCount != 0) {
                         std::cerr << "Runtime error: expected 0 arguments for default constructor but got " << (int)argCount << std::endl;
                         return;
@@ -363,18 +384,23 @@ void VM::run(FunctionObject* script){
                 if (std::holds_alternative<BoundMethod*>(calleeVal)) {
                     BoundMethod* bound = std::get<BoundMethod*>(calleeVal);
                     
-                    // Replace the bound method on stack with the instance (`this`)
                     stack[stack.size() - argCount - 1] = bound->instance;
                     
-                    if (argCount != bound->method->arity - 1) { // -1 for `this`
-                        std::cerr << "Runtime error: expected " << bound->method->arity - 1
-                                  << " arguments for method but got " << (int)argCount << std::endl;
+                    FunctionObject* matchingMethod = nullptr;
+                    for (auto* func : bound->methods) {
+                        if (argCount == func->arity - 1) {
+                            matchingMethod = func;
+                            break;
+                        }
+                    }
+                    
+                    if (!matchingMethod) {
+                        std::cerr << "Runtime error: expected method arguments did not match any overloaded method." << std::endl;
                         return;
                     }
                     
-                    // Base points to the callee slot (`this`), which is slot 0
                     size_t base = stack.size() - argCount - 1;
-                    frames.push_back({bound->method, 0, base});
+                    frames.push_back({matchingMethod, 0, base});
                     break;
                 }
 
@@ -556,6 +582,8 @@ void VM::run(FunctionObject* script){
             case OP_METHOD: {
                 uint8_t nameIdx = frame.function->chunk.code[frame.ip++];
                 std::string name = std::get<std::string>(frame.function->chunk.constants[nameIdx]);
+                uint8_t modifier = frame.function->chunk.code[frame.ip++];
+                
                 Value methodVal = pop();
                 Value klassVal = stack.back(); // peek
                 
@@ -565,7 +593,22 @@ void VM::run(FunctionObject* script){
                 }
                 
                 ClassObject* klass = std::get<ClassObject*>(klassVal);
-                klass->methods[name] = methodVal;
+                FunctionObject* func = std::get<FunctionObject*>(methodVal);
+                func->ownerClass = klass;
+                
+                bool overridden = false;
+                for (auto& existingMethod : klass->methods[name]) {
+                    if (existingMethod->arity == func->arity) {
+                        existingMethod = func;
+                        overridden = true;
+                        break;
+                    }
+                }
+                if (!overridden) {
+                    klass->methods[name].push_back(func);
+                }
+                
+                klass->methodAccess[name] = static_cast<AccessModifier>(modifier);
                 break;
             }
 
@@ -580,12 +623,30 @@ void VM::run(FunctionObject* script){
                 }
                 
                 InstanceObject* instance = std::get<InstanceObject*>(objVal);
-                
-                if (instance->fields.count(name)) {
-                    push(instance->fields[name]);
+                ClassObject* contextClass = frame.function->isMethod ? frame.function->ownerClass : nullptr;
+
+                if (instance->fields.count(name) || instance->klass->fields.count(name)) {
+                    AccessModifier access = AccessModifier::PUBLIC;
+                    if (instance->klass->fields.count(name)) access = instance->klass->fields[name];
+                    
+                    if (!checkAccess(instance->klass, contextClass, access)) {
+                        std::cerr << "Runtime error: Access denied to field '" << name << "'." << std::endl;
+                        return;
+                    }
+                    if (instance->fields.count(name)) {
+                        push(instance->fields[name]);
+                    } else {
+                        push(std::monostate{}); 
+                    }
                 } else if (instance->klass->methods.count(name)) {
-                    Value methodVal = instance->klass->methods[name];
-                    BoundMethod* bound = new BoundMethod(instance, std::get<FunctionObject*>(methodVal));
+                    AccessModifier access = instance->klass->methodAccess[name];
+                    if (!checkAccess(instance->klass, contextClass, access)) {
+                        std::cerr << "Runtime error: Access denied to method '" << name << "'." << std::endl;
+                        return;
+                    }
+                    
+                    std::vector<FunctionObject*> mVec = instance->klass->methods[name];
+                    BoundMethod* bound = new BoundMethod(instance, mVec);
                     push(bound);
                 } else {
                     std::cerr << "Runtime error: Undefined property '" << name << "'." << std::endl;
@@ -606,8 +667,18 @@ void VM::run(FunctionObject* script){
                 }
                 
                 InstanceObject* instance = std::get<InstanceObject*>(objVal);
+                ClassObject* contextClass = frame.function->isMethod ? frame.function->ownerClass : nullptr;
+                
+                if (instance->klass->fields.count(name)) {
+                    AccessModifier access = instance->klass->fields[name];
+                    if (!checkAccess(instance->klass, contextClass, access)) {
+                        std::cerr << "Runtime error: Access denied to field '" << name << "'." << std::endl;
+                        return;
+                    }
+                }
+                
                 instance->fields[name] = value;
-                push(value); // assignment returns the assigned value
+                push(value); 
                 break;
             }
 
@@ -618,20 +689,30 @@ void VM::run(FunctionObject* script){
                 
                 if (std::holds_alternative<InstanceObject*>(objVal)) {
                     InstanceObject* instance = std::get<InstanceObject*>(objVal);
+                    ClassObject* contextClass = frame.function->isMethod ? frame.function->ownerClass : nullptr;
                     
-                    if (instance->fields.count(name)) {
-                        push(instance->fields[name]);
-                        break;
+                    if (instance->fields.count(name) || instance->klass->fields.count(name)) {
+                        AccessModifier access = AccessModifier::PUBLIC;
+                        if (instance->klass->fields.count(name)) access = instance->klass->fields[name];
+                        if (checkAccess(instance->klass, contextClass, access)) {
+                            if (instance->fields.count(name)) {
+                                push(instance->fields[name]);
+                            } else {
+                                push(std::monostate{}); 
+                            }
+                            break;
+                        }
                     } else if (instance->klass->methods.count(name)) {
-                        Value methodVal = instance->klass->methods[name];
-                        BoundMethod* bound = new BoundMethod(instance, std::get<FunctionObject*>(methodVal));
-                        push(bound);
-                        break;
+                        AccessModifier access = instance->klass->methodAccess[name];
+                        if (checkAccess(instance->klass, contextClass, access)) {
+                            std::vector<FunctionObject*> mVec = instance->klass->methods[name];
+                            BoundMethod* bound = new BoundMethod(instance, mVec);
+                            push(bound);
+                            break;
+                        }
                     }
                 }
                 
-                // Fallback to global. (If objVal wasn't an InstanceObject, we just ignore it and check globals.
-                // In a stricter implementation, we'd ensure it fell back cleanly, but popping it is fine here)
                 push(globals[name]);
                 break;
             }
@@ -644,15 +725,59 @@ void VM::run(FunctionObject* script){
                 
                 if (std::holds_alternative<InstanceObject*>(objVal)) {
                     InstanceObject* instance = std::get<InstanceObject*>(objVal);
-                    // It's an implicit `this.` assignment
-                    instance->fields[name] = value;
-                    push(value);
-                } else {
-                    // Fallback to global variable assignment
-                    // Since it wasn't recognized as `this`, we set the global variable
-                    globals[name] = value;
-                    push(value);
+                    ClassObject* contextClass = frame.function->isMethod ? frame.function->ownerClass : nullptr;
+                    
+                    bool allowed = true;
+                    if (instance->klass->fields.count(name)) {
+                        AccessModifier access = instance->klass->fields[name];
+                        allowed = checkAccess(instance->klass, contextClass, access);
+                    }
+                    
+                    if (allowed) {
+                        instance->fields[name] = value;
+                        push(value);
+                        break;
+                    }
                 }
+                
+                globals[name] = value;
+                push(value);
+                break;
+            }
+            
+            case OP_INHERIT: {
+                Value superclassVal = pop();
+                if (!std::holds_alternative<ClassObject*>(superclassVal)) {
+                    std::cerr << "Runtime error: Superclass must be a class." << std::endl;
+                    return;
+                }
+                ClassObject* superclass = std::get<ClassObject*>(superclassVal);
+                
+                Value subclassVal = stack.back();
+                ClassObject* subclass = std::get<ClassObject*>(subclassVal);
+                
+                subclass->parent = superclass;
+                
+                for (const auto& methodPair : superclass->methods) {
+                    if (superclass->methodAccess[methodPair.first] == AccessModifier::PRIVATE) continue;
+                    subclass->methods[methodPair.first] = methodPair.second;
+                    subclass->methodAccess[methodPair.first] = superclass->methodAccess[methodPair.first];
+                }
+                for (const auto& fieldPair : superclass->fields) {
+                    if (fieldPair.second == AccessModifier::PRIVATE) continue;
+                    subclass->fields[fieldPair.first] = fieldPair.second;
+                }
+                break;
+            }
+            
+            case OP_FIELD: {
+                uint8_t nameIdx = frame.function->chunk.code[frame.ip++];
+                std::string name = std::get<std::string>(frame.function->chunk.constants[nameIdx]);
+                uint8_t modifier = frame.function->chunk.code[frame.ip++];
+                
+                Value klassVal = stack.back();
+                ClassObject* klass = std::get<ClassObject*>(klassVal);
+                klass->fields[name] = static_cast<AccessModifier>(modifier);
                 break;
             }
 

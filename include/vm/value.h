@@ -8,6 +8,7 @@
 #include <vector>
 #include <cstdint>
 #include "opcode.h"
+#include "../parser/ast.h"
 
 namespace vm {
 
@@ -38,7 +39,6 @@ using Value = std::variant<
     std::string 
 >;
 
-// Chunk definition — here so FunctionObject can hold a Chunk by value.
 struct Chunk {
     std::vector<uint8_t> code;
     std::vector<Value> constants;
@@ -64,7 +64,10 @@ struct ObjectObject {
 
 struct ClassObject {
     std::string name;
-    std::unordered_map<std::string, Value> methods;
+    ClassObject* parent = nullptr;
+    std::unordered_map<std::string, std::vector<FunctionObject*>> methods;
+    std::unordered_map<std::string, AccessModifier> methodAccess;
+    std::unordered_map<std::string, AccessModifier> fields;
     
     ClassObject(const std::string& name) : name(name) {}
 };
@@ -93,6 +96,7 @@ struct FunctionObject {
     std::string name;
     int arity;
     bool isMethod;
+    ClassObject* ownerClass = nullptr;
     Chunk chunk;
 
     FunctionObject(const std::string& name, int arity, bool isMethod = false)
@@ -101,10 +105,10 @@ struct FunctionObject {
 
 struct BoundMethod {
     InstanceObject* instance;
-    FunctionObject* method;
+    std::vector<FunctionObject*> methods;
 
-    BoundMethod(InstanceObject* instance, FunctionObject* method)
-        : instance(instance), method(method) {}
+    BoundMethod(InstanceObject* instance, std::vector<FunctionObject*> methods)
+        : instance(instance), methods(std::move(methods)) {}
 };
 
 }
