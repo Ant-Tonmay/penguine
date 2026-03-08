@@ -152,6 +152,8 @@ bool VM::executeInstruction(CallFrame& frame, uint8_t instruction) {
         case OP_CAST_CHAR:
         case OP_TYPEOF:
             return handleCastOp(instruction);
+        case OP_READLINE:
+            return handleInputOp(instruction);
 
         case OP_HALT:
             return false;

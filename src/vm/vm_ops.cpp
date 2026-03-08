@@ -1,6 +1,7 @@
 #include "vm/vm.h"
 
 #include "vm/utils/value_utils.h"
+#include <iostream>
 
 namespace vm {
 
@@ -246,6 +247,19 @@ bool VM::handleCastOp(uint8_t instruction) {
 
         default:
             push(value);
+            return false;
+    }
+}
+
+bool VM::handleInputOp(uint8_t instruction) {
+    switch (instruction) {
+        case OP_READLINE: {
+            std::string line;
+            std::getline(std::cin, line);
+            push(line);
+            return true;
+        }
+        default:
             return false;
     }
 }

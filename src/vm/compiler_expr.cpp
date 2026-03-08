@@ -149,6 +149,10 @@ void Compiler::compileExpr(ASTNode* node) {
                 emit(OP_TYPEOF);
                 return;
             }
+            if (calleeName->name == "readline") {
+                emit(OP_READLINE);
+                return;
+            }
         }
 
         if (auto* mem = dynamic_cast<MemberExpr*>(call->callee.get())) {

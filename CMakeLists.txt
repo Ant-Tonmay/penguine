@@ -27,8 +27,16 @@ add_library(penguin_core
     src/interpreter/deep_copy.cpp
     src/symbol_table/symbol_table.cpp
     src/vm/chunk.cpp
+    src/vm/compiler_core.cpp
+    src/vm/compiler_expr.cpp
+    src/vm/compiler_stmt.cpp
     src/vm/vm.cpp
-    src/vm/compiler.cpp
+    src/vm/vm_array.cpp
+    src/vm/vm_call.cpp
+    src/vm/vm_class.cpp
+    src/vm/vm_ops.cpp
+    src/vm/utils/access_utils.cpp
+    src/vm/utils/value_utils.cpp
 )
 
 target_include_directories(penguin_core
