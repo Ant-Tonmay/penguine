@@ -21,6 +21,17 @@ public:
     Value pop();
 
     void run(FunctionObject* script);
+
+private:
+    bool executeInstruction(CallFrame& frame, uint8_t instruction);
+    bool handleArithmetic(uint8_t instruction);
+    bool handleComparison(uint8_t instruction);
+    bool handleJump(CallFrame& frame, uint8_t instruction);
+    bool handleCall(CallFrame& frame);
+    bool handleReturn(CallFrame& frame);
+    bool handleArrayOp(CallFrame& frame, uint8_t instruction);
+    bool handleClassOp(CallFrame& frame, uint8_t instruction);
+    bool handleCastOp(uint8_t instruction);
 };
 
 }
