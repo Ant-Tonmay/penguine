@@ -1,0 +1,82 @@
+{
+    class HashMap {
+       private {
+            dec : arr;
+            dec : insert(key,val);
+            dec : retreive(key);
+            dec : change(key , val);
+
+            
+       }
+       public{
+            dec : get(key);
+            dec : update(key , val);
+
+            func HashMap(){
+                this.arr = [];
+            }
+
+            func printMap(){
+                println("Printing map content (placeholder)");
+            }
+
+       }
+  
+       func insert(key,val){
+            println("Inside insert, this:");
+            println(this);
+            println("arr property:");
+            println(this.arr);
+            push(this.arr, key);
+            push(this.arr, val);
+       }
+       func retreive(key){
+             for (i = 0; i < length(this.arr); i = i + 2) {
+                 if (this.arr[i] == key) {
+                     return this.arr[i+1];
+                 }
+             }
+             return null;
+       }
+       func change(key, val){
+             for (i = 0; i < length(this.arr); i = i + 2) {
+                 if (this.arr[i] == key) {
+                     this.arr[i+1] = val;
+                     return;
+                 }
+             }
+       }
+
+       func get(key){
+            return this.retreive(key);
+       }
+       func update(key ,val){
+            this.change(key,val);
+       }
+        
+    }
+
+    func main(){
+        println("Starting HashMap demo");
+        hashMap = HashMap();
+
+       
+
+        println("Inserting 1 -> 10");
+        hashMap.insert(1,10);
+        
+        println("Getting key 1:");
+        val = hashMap.get(1);
+        println(val);
+
+        println("Updating 1 -> 20");
+        hashMap.update(1,20);
+        
+        println("Getting key 1 after update:");
+        val = hashMap.get(1);
+        println(val);
+        
+        hashMap.printMap();
+        println("Done");
+    }
+}

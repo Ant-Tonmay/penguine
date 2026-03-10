@@ -1,0 +1,18 @@
+{
+    func main() {
+        a = 10;
+        b = "20";
+        c = int(b);
+        d = char(65);
+        e = string(10);
+        println(a + b);
+        println(c+a);
+        println(d);
+        println(e);
+        println(type(a));
+        println(type(b));
+        println(type(c));
+        println(type(d));
+        println(type(e));
+    }
+}

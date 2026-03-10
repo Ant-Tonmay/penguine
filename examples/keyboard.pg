@@ -1,0 +1,16 @@
+{
+    func main(){
+        print("Enter input: ");
+        text = readline();
+        println(text);
+
+        print("Enter Number: ");
+        a = int(readline());
+        b = int(readline());
+
+        println(type(a));
+        println(type(b));
+        println((a+b));
+    
+    }
+} 

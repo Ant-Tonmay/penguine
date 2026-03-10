@@ -1,0 +1,40 @@
+{
+    class Mamals{
+        public{
+            func Mamals(age){
+                println("Parent Constructor");
+                this.age = age;
+            }
+        }
+        protected{
+            dec : race();
+            dec : age;
+            dec : print_age();
+        }
+
+        func race(){
+            println("Mamals Race");
+        }
+
+        func print_age(){
+            println("Age is {this.age}");
+        }
+    }
+    class Human inherits Mamals {
+        public{
+            func Human(age){
+                println("child Constructor");
+                Mamals(age);
+            
+            }
+        }
+    }
+
+    func main(){
+        human = Human(25);
+        human.print_age();
+        
+        human.race();
+    }
+
+}

@@ -1,0 +1,37 @@
+{
+  func main() {
+    print("Testing If-Else:");
+    a = 10;
+    if (a > 5) {
+      print(true);
+    } else {
+      print(false);
+    }
+
+    print("Testing While Loop:");
+    count = 0;
+    while (count < 3) {
+      print(count);
+      count += 1;
+    }
+
+    // print("Testing For Loop:");
+    // for (i = 0; i < 3; i += 1) {
+    //   print(i);
+    // }
+
+    print("Testing Short-Circuit AND:");
+    if (false && a == 99) {
+      print("Failed");
+    } else {
+      if (a == 10) { print(true); } else { print(false); }
+    }
+
+    print("Testing Short-Circuit OR:");
+    if (true || a == 99) {
+      if (a == 10) { print(true); } else { print(false); }
+    } else {
+      print("Failed");
+    }
+  }
+}

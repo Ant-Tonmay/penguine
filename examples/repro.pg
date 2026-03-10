@@ -1,0 +1,10 @@
+{
+    func main() {
+        a = 10;
+        b = 20;
+        println("value of a is {a} , b is {b}");
+        println("no interpolation here");
+        s = "inner {a}";
+        println("nested: {s}");
+    }
+}

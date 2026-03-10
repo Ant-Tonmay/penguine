@@ -5,25 +5,25 @@
 
         c = a+b;
         c+=1;
-        print(c);
+        println(c);
         d = 0;
         d+=a;
-        print(d);
+        println(d);
         e = 20;
         e/=a;
-        print(e);
+        println(e);
 
         f = 1;
         f*=a;
-        print(f);
+        println(f);
 
         g = 1;
         h = 0;
         h|=g;
-        print(h);
+        println(h);
         m=0;
         g &= m;
-        print(g);
+        println(g);
         
     }
 }

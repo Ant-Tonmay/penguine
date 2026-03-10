@@ -1,0 +1,45 @@
+{
+class Animal {
+    public {
+        dec: species;
+        
+        func Animal() {
+            this.species = "Unknown";
+            return this;
+        }
+        
+        func speak() {
+            println("Animal sound");
+        }
+    }
+}
+
+class Dog inherits Animal {
+    public {
+        dec: breed;
+        
+        func Dog(breed) {
+            this.species = "Dog";
+            this.breed = breed;
+            return this;
+        }
+        
+        func speak() {
+            println("Woof");
+        }
+        
+        func getInfo() {
+            println("I am a " + this.species + " of type " + this.breed);
+        }
+    }
+}
+
+func main() {
+    a = Animal();
+    a.speak();
+
+    d = Dog("Bulldog");
+    d.speak();
+    d.getInfo();
+}
+}

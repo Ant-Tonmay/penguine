@@ -1,0 +1,16 @@
+{
+    func main() {
+        a = 10;
+        {
+            b = 20;
+            print(a + b);
+            {
+                c = 30;
+                print(a + b + c);
+                c = 40;
+                print(c);
+            }
+        }
+        print(a);
+    }
+}

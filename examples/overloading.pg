@@ -1,0 +1,24 @@
+{
+    class Math {
+        public {
+            func add(a, b) {
+                println("Adding 2 numbers:");
+                return a + b;
+            }
+
+            func add(a, b, c) {
+                println("Adding 3 numbers:");
+                return a + b + c;
+            }
+        }
+    }
+
+    func main() {
+        m = Math();
+        sum2 = m.add(10, 20);
+        println(sum2); 
+
+        sum3 = m.add(10, 20, 30);
+        println(sum3);
+    }
+}

@@ -1,0 +1,6 @@
+{
+    func main() {
+        name = "Penguin";
+        println("Hello {name}!");
+    }
+}

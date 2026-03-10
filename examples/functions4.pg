@@ -1,0 +1,22 @@
+{   
+    func g(){
+        print("calling f");
+    }
+
+    func f(){
+        print("calling g");
+        g();
+    }
+
+    
+
+    func h(){
+        print("calling h");
+        g();
+    }
+
+    func main(){
+        f();
+        h();
+    }
+}

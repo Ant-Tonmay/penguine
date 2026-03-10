@@ -1,0 +1,32 @@
+{   
+    class BinaryOpr{
+        public {
+            func binaryOpr(a,b,op){
+       
+                if(op == "-"){
+                    return a-b;
+                }
+                else if(op == "*"){
+                    return a*b;
+                }
+                else if(op == "/"){
+                    return a/b;
+                }
+            }
+            func binaryOpr(a,b){
+                return a+b;
+            }
+
+        }
+    }
+
+    
+    func main() {
+        a = 10;
+        b = 20;
+        op = "-";
+        binaryOpr = BinaryOpr();
+        println(binaryOpr.binaryOpr(a,b,op));
+        println(binaryOpr.binaryOpr(a,b));
+    }
+}

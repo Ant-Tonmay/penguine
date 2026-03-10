@@ -1,0 +1,20 @@
+{
+    class Parent {
+        protected {
+            func printParent(){
+                print("parent");
+            }
+        }
+    }
+    class Child inherits Parent {
+        public {
+            func printParent(){
+                println("child");
+            }
+        }
+    }
+    func main(){
+        child = Child();
+        child.printParent();
+    }
+}

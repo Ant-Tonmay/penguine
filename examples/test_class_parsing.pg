@@ -1,0 +1,11 @@
+{
+    class Test {
+        public {
+            dec : x;
+        }
+    }
+
+    func main() {
+        print("Hello");
+    }
+}

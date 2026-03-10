@@ -1,0 +1,95 @@
+{
+class Animal {
+    public {
+        dec: species;
+        
+        func Animal() {
+            this.species = "Animalia";
+            return this;
+        }
+
+        func speak() {
+            println("Some animal sound");
+        }
+    }
+    private {
+        func secretAnimal() {
+            println("Secret");
+        }
+    }
+}
+
+class Dog inherits Animal {
+    public {
+        dec: breed;
+        
+        func Dog(breed) {
+            this.species = "Dog";
+            this.breed = breed;
+            return this;
+        }
+        
+        func speak() {
+            println("Woof");
+        }
+
+        func speak(times) {
+            for (i = 0; i < times; i += 1) {
+                println("Woof");
+            }
+        }
+        
+        func getInfo() {
+            println("I am a " + this.species + " of type " + this.breed);
+        }
+    }
+}
+
+class SecretDog inherits Dog {
+    private {
+        dec: secretName;
+    }
+    public {
+        func SecretDog(breed, name) {
+            this.species = "SecretDog";
+            this.breed = breed;
+            this.secretName = name;
+            return this;
+        }
+        func whisper() {
+            println("My secret name is " + this.secretName);
+        }
+    }
+}
+
+class ChildSecretDog inherits SecretDog {
+    public {
+        func failPrivateAccess() {
+            // this should fail at runtime if we try to access secretName
+            println("Trying to get secret: " + this.secretName);
+        }
+    }
+}
+
+func main() {
+    println("--- Testing Parent ---");
+    a = Animal();
+    a.speak();
+    // a.secretAnimal(); // Should throw access denied if uncommented
+
+    println("--- Testing Child Overriding & Overloading ---");
+    d = Dog("Bulldog");
+    d.speak();
+    d.speak(3);
+    d.getInfo();
+
+    println("--- Testing Multi-level ---");
+    sd = SecretDog("Pug", "Agent K");
+    sd.whisper();
+
+    println("--- Testing Access Checks ---");
+    cd = ChildSecretDog(); // constructor will fallback to default since no constructor provided
+    cd.failPrivateAccess();
+}
+
+}
